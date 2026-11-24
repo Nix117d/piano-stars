@@ -53,42 +53,52 @@ export function parseMusicXml(xml: string): ImportResult {
   const part = root.getElementsByTagName('part')[0];
   const notes: Note[] = [];
   let divisions = 1;
+  // The note being built; its chord members may still raise its pitch.
+  let group: { note: Note; tiedStop: boolean } | null = null;
+
+  const flush = () => {
+    if (!group) return;
+    const { note, tiedStop } = group;
+    group = null;
+    const previous = notes[notes.length - 1];
+    if (tiedStop && previous && previous.midi !== null && previous.midi === note.midi) previous.beats += note.beats;
+    else notes.push(note);
+  };
 
   for (const measure of Array.from(part?.children ?? [])) {
     for (const el of Array.from(measure.children)) {
       if (el.localName === 'attributes') {
         divisions = childNum(el, 'divisions') ?? divisions;
-        continue;
-      }
-      if (el.localName !== 'note' || child(el, 'grace')) continue;
-      if ((childNum(el, 'voice') ?? 1) !== 1 || (childNum(el, 'staff') ?? 1) !== 1) continue;
+      } else if (el.localName === 'forward') {
+        // Silence in our voice; forwards in other voices are skipped.
+        if ((childNum(el, 'voice') ?? 1) !== 1) continue;
+        flush();
+        notes.push({ midi: null, beats: (childNum(el, 'duration') ?? 0) / divisions });
+      } else if (el.localName === 'note' && !child(el, 'grace')) {
+        if ((childNum(el, 'voice') ?? 1) !== 1 || (childNum(el, 'staff') ?? 1) !== 1) continue;
+        const midi = midiOf(el);
+        const finger = midi === null ? undefined : fingerOf(el);
+        const tiedStop = Array.from(el.children).some(c => c.localName === 'tie' && c.getAttribute('type') === 'stop');
 
-      const midi = midiOf(el);
-      const previous = notes[notes.length - 1];
-
-      if (child(el, 'chord')) {
-        // Chord members share the head note's time; keep the highest pitch.
-        if (previous && previous.midi !== null && midi !== null && midi > previous.midi) {
-          previous.midi = midi;
-          const finger = fingerOf(el);
-          if (finger) previous.finger = finger;
-          else delete previous.finger;
+        if (child(el, 'chord') && group) {
+          // Chord members share the head's time; keep the highest pitch (with its finger and tie).
+          const top = group.note;
+          if (midi !== null && (top.midi === null || midi > top.midi)) {
+            top.midi = midi;
+            if (finger) top.finger = finger;
+            else delete top.finger;
+            group.tiedStop = tiedStop;
+          }
+          continue;
         }
-        continue;
+        flush();
+        const note: Note = { midi, beats: (childNum(el, 'duration') ?? 0) / divisions };
+        if (finger) note.finger = finger;
+        group = { note, tiedStop };
       }
-
-      const beats = (childNum(el, 'duration') ?? 0) / divisions;
-      const tiedStop = Array.from(el.children).some(c => c.localName === 'tie' && c.getAttribute('type') === 'stop');
-      if (tiedStop && previous && previous.midi !== null && previous.midi === midi) {
-        previous.beats += beats;
-        continue;
-      }
-      const note: Note = { midi, beats };
-      const finger = midi === null ? undefined : fingerOf(el);
-      if (finger) note.finger = finger;
-      notes.push(note);
     }
   }
+  flush();
 
   if (!notes.some(n => n.midi !== null)) return { ok: false, reason: 'noNotes' };
   const hasFingering = notes.some(n => n.finger !== undefined);

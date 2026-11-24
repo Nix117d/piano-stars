@@ -52,4 +52,22 @@ describe('MusicXML import', () => {
     expect(parseMusicXml('<score-partwise><part id="P1"><measure><note><rest/><duration>1</duration></note></measure></part></score-partwise>'))
       .toEqual({ ok: false, reason: 'noNotes' });
   });
+  const score = (body: string) =>
+    `<score-partwise><part id="P1"><measure><attributes><divisions>1</divisions></attributes>${body}</measure></part></score-partwise>`;
+  const n = (step: string, extra = '', tie = '') =>
+    `<note>${extra}<pitch><step>${step}</step><octave>4</octave></pitch><duration>1</duration>${tie}</note>`;
+
+  test('tied chords merge into one note on the top pitch', () => {
+    const r = parseMusicXml(score(n('C') + n('E', '<chord/>') + n('C', '', '<tie type="stop"/>') + n('E', '<chord/>', '<tie type="stop"/>')));
+    expect(r.ok && r.notes).toEqual([{ midi: 64, beats: 2 }]);
+  });
+  test('tied chord with the higher note listed first', () => {
+    const r = parseMusicXml(score(n('E') + n('C', '<chord/>') + n('E', '', '<tie type="stop"/>') + n('C', '<chord/>', '<tie type="stop"/>')));
+    expect(r.ok && r.notes).toEqual([{ midi: 64, beats: 2 }]);
+  });
+  test('forward in voice 1 adds silence, in another voice is skipped', () => {
+    const r = parseMusicXml(score(n('C') + '<forward><duration>2</duration></forward>' + n('D') +
+      '<forward><duration>3</duration><voice>2</voice></forward>' + n('E')));
+    expect(r.ok && r.notes).toEqual([{ midi: 60, beats: 1 }, { midi: null, beats: 2 }, { midi: 62, beats: 1 }, { midi: 64, beats: 1 }]);
+  });
 });
