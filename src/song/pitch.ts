@@ -51,7 +51,7 @@ export function fitToKeyboard(notes: Note[]): { notes: Note[]; octaveShift: numb
   const minShift = Math.ceil((KEYBOARD_LOW - lo) / 12);
   const maxShift = Math.floor((KEYBOARD_HIGH - hi) / 12);
   // If no whole-octave shift fits both ends, settle for the lowest note being on the keyboard.
-  const octaveShift = minShift <= maxShift ? Math.min(Math.max(0, minShift), maxShift) : minShift;
+  const octaveShift = (minShift <= maxShift ? Math.min(Math.max(0, minShift), maxShift) : minShift) || 0; // `|| 0` turns -0 into 0
   if (octaveShift === 0) return { notes, octaveShift: 0 };
   return {
     notes: notes.map(n => (n.midi === null ? n : { ...n, midi: n.midi + octaveShift * 12 })),

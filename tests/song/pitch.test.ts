@@ -36,4 +36,14 @@ describe('pitch helpers', () => {
     expect(wide.notes.map(n => n.midi)).toEqual([36, 112]);
     expect(fitToKeyboard([{ midi: null, beats: 1 }]).octaveShift).toBe(0);
   });
+  test('fitToKeyboard fallback never returns -0', () => {
+    const r = fitToKeyboard([{ midi: 40, beats: 1 }, { midi: 100, beats: 1 }]);
+    expect(Object.is(r.octaveShift, 0)).toBe(true);
+    expect(r.notes.map(n => n.midi)).toEqual([40, 100]);
+  });
+  test('fitToKeyboard fallback shifts down by the same amount for every note', () => {
+    const r = fitToKeyboard([{ midi: 60, beats: 1 }, { midi: null, beats: 1 }, { midi: 130, beats: 1 }]);
+    expect(r.octaveShift).toBe(-2);
+    expect(r.notes.map(n => n.midi)).toEqual([36, null, 106]);
+  });
 });
