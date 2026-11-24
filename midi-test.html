@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>MIDI test</title>
+    <style>
+      body { font-family: sans-serif; font-size: 32px; padding: 24px; }
+      button { font-size: 40px; padding: 16px 40px; }
+      #notes { font-size: 48px; font-weight: bold; }
+    </style>
+  </head>
+  <body>
+    <button id="start">Start</button>
+    <p>Status: <b id="status">not started</b></p>
+    <p>Device: <b id="device">-</b></p>
+    <p>Last 10 notes:</p>
+    <div id="notes"></div>
+    <script type="module" src="/src/midi-test.ts"></script>
+  </body>
+</html>
