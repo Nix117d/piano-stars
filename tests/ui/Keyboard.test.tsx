@@ -36,3 +36,17 @@ test('Hand has five labelled fingers, highlighted one filled', () => {
   expect(screen.getByTestId('finger-2').querySelector('[fill="#123456"]')).toBeTruthy();
   expect(screen.getByTestId('finger-3').querySelector('[fill="#123456"]')).toBeNull();
 });
+
+test('black keys are 70% of a white key wide', () => {
+  render(<Keyboard low={60} high={72} />);
+  const white = parseFloat(screen.getByTestId('key-60').style.width);
+  const black = parseFloat(screen.getByTestId('key-61').style.width);
+  expect(black / white).toBeCloseTo(0.7);
+});
+
+test('changing feedbackId replays sparkle on the same key', () => {
+  const { rerender } = render(<Keyboard low={60} high={72} sparkle={64} feedbackId={1} />);
+  const before = screen.getByTestId('sparkle');
+  rerender(<Keyboard low={60} high={72} sparkle={64} feedbackId={2} />);
+  expect(screen.getByTestId('sparkle')).not.toBe(before);
+});

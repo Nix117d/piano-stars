@@ -1,6 +1,6 @@
 import { isBlack, midiToName, whiteIndex } from '../song/pitch';
 import type { Finger } from '../song/types';
-import { keyColor } from './colors';
+import { keyColor, textOn } from './colors';
 import './styles.css';
 
 export interface KeyboardProps {
@@ -11,9 +11,11 @@ export interface KeyboardProps {
   sparkle?: number;
   middleC?: boolean;
   onTap?: (midi: number) => void;
+  /** Change this to replay wobble/sparkle on a key that is already animating. */
+  feedbackId?: number;
 }
 
-export function Keyboard({ low, high, glow, wobble, sparkle, middleC, onTap }: KeyboardProps) {
+export function Keyboard({ low, high, glow, wobble, sparkle, middleC, onTap, feedbackId }: KeyboardProps) {
   const midis: number[] = [];
   for (let m = low; m <= high; m++) midis.push(m);
   const first = whiteIndex(low);
@@ -21,6 +23,7 @@ export function Keyboard({ low, high, glow, wobble, sparkle, middleC, onTap }: K
   const keyW = 100 / whiteCount;
 
   return (
+    <div class="keyboard-scroll">
     <div class="keyboard" style={{ '--white-count': whiteCount } as Record<string, string | number>}>
       {midis.map(m => {
         const black = isBlack(m);
@@ -30,11 +33,11 @@ export function Keyboard({ low, high, glow, wobble, sparkle, middleC, onTap }: K
         const idx = whiteIndex(m) - first;
         const left = black ? (idx + 1) * keyW : idx * keyW;
         const style: Record<string, string> = black
-          ? { left: `${left}%`, width: `${keyW * 0.6}%`, '--key-color': color }
+          ? { left: `${left}%`, width: `${keyW * 0.7}%`, '--key-color': color }
           : { left: `${left}%`, width: `${keyW}%`, '--key-color': color };
         return (
           <div
-            key={m}
+            key={wobble === m || sparkle === m ? `${m}-${feedbackId ?? 0}` : m}
             data-testid={`key-${m}`}
             class={`key ${black ? 'key-black' : 'key-white'}`}
             data-glow={isGlow ? 'true' : undefined}
@@ -45,10 +48,12 @@ export function Keyboard({ low, high, glow, wobble, sparkle, middleC, onTap }: K
           >
             {!black && <span class="key-letter">{midiToName(m).letter}</span>}
             {!black && middleC && m === 60 && <span class="middle-c-marker" data-testid="middle-c-marker" />}
-            {isGlow && glow?.finger !== undefined && <span class="finger-badge">{glow.finger}</span>}
+            {sparkle === m && <span class="key-sparkle" data-testid="sparkle">{'\u2605'}</span>}
+            {isGlow && glow?.finger !== undefined && <span class="finger-badge" style={{ color: textOn(color) }}>{glow.finger}</span>}
           </div>
         );
       })}
+    </div>
     </div>
   );
 }

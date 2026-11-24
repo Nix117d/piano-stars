@@ -1,6 +1,6 @@
 import { expect, test } from 'vitest';
 import { visibleRange } from '../../src/ui/range';
-import { keyColor, NOTE_COLORS } from '../../src/ui/colors';
+import { keyColor, NOTE_COLORS, textOn } from '../../src/ui/colors';
 
 test('visibleRange whole octaves, at least one', () => {
   expect(visibleRange([60, 67])).toEqual({ low: 60, high: 72 });
@@ -17,4 +17,13 @@ test('visibleRange clamps to the keyboard', () => {
 test('keyColor: white keys use the note colour, black keys a 35% darker lower neighbour', () => {
   expect(keyColor(60)).toBe(NOTE_COLORS.C);
   expect(keyColor(61)).toBe('#952522'); // E53935 * 0.65
+});
+
+test('visibleRange of no notes defaults to the middle-C octave', () => {
+  expect(visibleRange([])).toEqual({ low: 60, high: 72 });
+});
+
+test('textOn: dark text on light colours, white on dark ones', () => {
+  expect(textOn(NOTE_COLORS.E)).toBe('#1a1a1a');
+  expect(textOn(NOTE_COLORS.A)).toBe('#fff');
 });

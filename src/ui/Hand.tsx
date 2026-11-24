@@ -1,4 +1,5 @@
 import type { Finger } from '../song/types';
+import { textOn } from './colors';
 import './styles.css';
 
 // Right hand seen from above: thumb (1) on the left, little finger (5) on the right.
@@ -25,7 +26,7 @@ export function Hand({ highlight, color = '#FDD835' }: { highlight?: Finger; col
             />
             <text
               x={f.x + f.w / 2} y={f.y + 24} text-anchor="middle"
-              font-size="18" font-weight="700" fill={on ? '#fff' : '#8A5A35'}
+              font-size="18" font-weight="700" fill={on ? textOn(color) : '#8A5A35'}
             >{n}</text>
           </g>
         );
