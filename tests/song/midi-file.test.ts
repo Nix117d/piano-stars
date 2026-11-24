@@ -56,6 +56,29 @@ describe('parseMidiFile', () => {
     expect(r.ok && r.notes).toEqual([{ midi: 60, beats: 1 }]);
   });
 
+  test('off-grid onsets: cumulative beats equal the snapped onset positions', () => {
+    // Triplet-ish onsets every 1/3 beat; each note lasts until the next onset.
+    const ticks = [0, 160, 320, 480, 640, 800, 960];
+    const notes = ticks.map((t, k) => ({ midi: 60 + k, ticks: t, durationTicks: 160 }));
+    const r = parseMidiFile(build([{ channel: 0, notes }]));
+    if (!r.ok) throw new Error('expected ok');
+    const starts: number[] = [];
+    let at = 0;
+    for (const note of r.notes) {
+      if (note.midi !== null) starts.push(at);
+      at += note.beats;
+    }
+    const snapped = ticks.map(t => Math.round(t / PPQ / 0.25) * 0.25);
+    expect(starts).toEqual(snapped);
+  });
+
+  test('onsets collapsing into one slot keep the highest note', () => {
+    const r = parseMidiFile(
+      build([{ channel: 0, notes: [n(60, 0, 1), n(72, 0.05, 1), n(64, 0.1, 1), n(65, 1, 1)] }]),
+    );
+    expect(r.ok && r.notes).toEqual([{ midi: 72, beats: 1 }, { midi: 65, beats: 1 }]);
+  });
+
   test('no usable notes', () => {
     expect(parseMidiFile(build([{ channel: 9, notes: [n(36, 0, 1)] }]))).toEqual({ ok: false, reason: 'noNotes' });
   });

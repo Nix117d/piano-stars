@@ -21,24 +21,25 @@ export function parseMidiFile(bytes: Uint8Array): ImportResult {
   if (!track) return { ok: false, reason: 'noNotes' };
 
   const ppq = midi.header.ppq || 480;
-  // Keep only the highest note at each start tick.
-  const top = new Map<number, { ticks: number; durationTicks: number; midi: number }>();
+  // Snap each onset's absolute position to the grid; onsets sharing a slot keep the highest note.
+  const slots = new Map<number, { pos: number; durationTicks: number; midi: number }>();
   for (const n of track.notes) {
-    const existing = top.get(n.ticks);
-    if (!existing || n.midi > existing.midi) top.set(n.ticks, n);
+    const pos = snap(n.ticks / ppq);
+    const existing = slots.get(pos);
+    if (!existing || n.midi > existing.midi) slots.set(pos, { pos, durationTicks: n.durationTicks, midi: n.midi });
   }
-  const onsets = Array.from(top.values()).sort((a, b) => a.ticks - b.ticks);
+  const onsets = Array.from(slots.values()).sort((a, b) => a.pos - b.pos);
 
-  // Onset-based timeline: each note lasts until the next onset; a real gap becomes a rest.
+  // Onset-based timeline: intervals come from snapped positions, so beats never drift from the file.
   const notes: Note[] = [];
   onsets.forEach((n, i) => {
-    const dur = Math.max(STEP, snap(n.durationTicks / ppq));
+    const dur = snap(n.durationTicks / ppq);
     const next = onsets[i + 1];
     if (!next) {
-      notes.push({ midi: n.midi, beats: dur });
+      notes.push({ midi: n.midi, beats: Math.max(STEP, dur) });
       return;
     }
-    const ioi = Math.max(STEP, snap((next.ticks - n.ticks) / ppq));
+    const ioi = next.pos - n.pos;
     if (ioi - dur >= STEP) {
       notes.push({ midi: n.midi, beats: dur }, { midi: null, beats: ioi - dur });
     } else {
