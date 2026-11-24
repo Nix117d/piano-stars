@@ -33,10 +33,10 @@ export function parseMidiFile(bytes: Uint8Array): ImportResult {
   // Onset-based timeline: intervals come from snapped positions, so beats never drift from the file.
   const notes: Note[] = [];
   onsets.forEach((n, i) => {
-    const dur = snap(n.durationTicks / ppq);
+    const dur = Math.max(STEP, snap(n.durationTicks / ppq));
     const next = onsets[i + 1];
     if (!next) {
-      notes.push({ midi: n.midi, beats: Math.max(STEP, dur) });
+      notes.push({ midi: n.midi, beats: dur });
       return;
     }
     const ioi = next.pos - n.pos;

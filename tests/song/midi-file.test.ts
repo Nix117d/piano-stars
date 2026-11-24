@@ -79,6 +79,11 @@ describe('parseMidiFile', () => {
     expect(r.ok && r.notes).toEqual([{ midi: 72, beats: 1 }, { midi: 65, beats: 1 }]);
   });
 
+  test('very short non-last note is floored at 0.25 beats', () => {
+    const r = parseMidiFile(build([{ channel: 0, notes: [n(60, 0, 0.05), n(62, 1, 1)] }]));
+    expect(r.ok && r.notes).toEqual([{ midi: 60, beats: 0.25 }, { midi: null, beats: 0.75 }, { midi: 62, beats: 1 }]);
+  });
+
   test('no usable notes', () => {
     expect(parseMidiFile(build([{ channel: 9, notes: [n(36, 0, 1)] }]))).toEqual({ ok: false, reason: 'noNotes' });
   });
