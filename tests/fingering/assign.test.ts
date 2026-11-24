@@ -1,6 +1,6 @@
 import { expect, test } from 'vitest';
 import {
-  assignFingering, crossesOnStep, HAND_MOVE_AT_BREAK, HAND_MOVE_CROSSING, HAND_MOVE_LIFT, transitionCost,
+  assignFingering, crossesOnStep, HAND_MOVE_AT_BREAK, HAND_MOVE_CROSSING, HAND_MOVE_LIFT, neighbours, transitionCost,
 } from '../../src/fingering/assign';
 import { SPAN_TABLE } from '../../src/fingering/parncutt';
 import { handPositions } from '../../src/fingering/positions';
@@ -25,6 +25,28 @@ test('shift happens at the rest, not mid-phrase', () => {
   const f = assignFingering(seq('C D E F G- _ A B A G'));
   expect(f.slice(0, 5).map(n => n.finger)).toEqual([1, 2, 3, 4, 5]);
   expect(handPositions(f).map(p => p.startIndex)).toEqual([0, 6]);
+});
+test('Ode to Joy in F position: Bb fits between A and C', () => {
+  const f = assignFingering(seq('A A A# C5 C5 A# A G F F G A A- G/ G-'));
+  expect(f.map(n => n.finger)).toEqual([3,3,4,5,5,4,3,2,1,1,2,3,3,2,2]);
+  expect(handPositions(f).map(p => p.startIndex)).toEqual([0]);
+});
+test('Ode to Joy in D position: F# fits between E and G', () => {
+  expect(fingers('D E F# G A')).toEqual([1, 2, 3, 4, 5]);
+  const f = assignFingering(seq('F# F# G A A G F# E D D E F# F#- E/ E-'));
+  expect(f.map(n => n.finger)).toEqual([3,3,4,5,5,4,3,2,1,1,2,3,3,2,2]);
+  expect(handPositions(f).map(p => p.startIndex)).toEqual([0]);
+});
+test('five-finger position counts a black key from the white key on either side', () => {
+  expect(transitionCost(3, 4, 69, 70, false)).toBe(2); // A to Bb, as A to B: only rules 8 and 9
+  expect(transitionCost(4, 5, 70, 72, false)).toBe(0); // Bb to C, as B to C
+  expect(transitionCost(2, 3, 64, 66, false)).toBe(0); // E to F#, as E to F
+});
+test('a rest is no neighbour for the black-key rules', () => {
+  const notes = seq('C _ C# D');
+  expect(neighbours(notes, 2)).toEqual({ before: null, after: 62 });
+  expect(neighbours(notes, 0)).toEqual({ before: null, after: null });
+  expect(neighbours(notes, 3)).toEqual({ before: 61, after: null });
 });
 test('keeps fingers set by the sheet or parent', () => {
   expect(fingers('C(2) D E')).toEqual([2, 3, 4]);

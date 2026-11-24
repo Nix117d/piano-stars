@@ -1,5 +1,6 @@
 import { whiteIndex } from '../song/pitch';
 import type { Finger, Note } from '../song/types';
+import { isHandMove } from './assign';
 
 export interface HandPosition {
   /** Index into the song's notes (rests included) of the first note in this position. */
@@ -18,17 +19,20 @@ function whiteKey(index: number): number {
 }
 
 /**
- * Splits fingered notes into five-finger positions. A position lasts while no finger has to play
- * two different keys; a new one starts at the first note that would. Rests and unfingered notes
- * don't split positions.
+ * Splits fingered notes into five-finger positions. A new position starts at a note reached by a
+ * hand move (as `assignFingering` defines it), or at the first note that would make one finger
+ * play two different keys. Rests and unfingered notes don't split positions.
  */
 export function handPositions(notes: Note[]): HandPosition[] {
   const positions: HandPosition[] = [];
   let current: HandPosition | null = null;
+  let last: { finger: Finger; midi: number } | null = null;
   notes.forEach((n, index) => {
     if (n.midi === null || n.finger === undefined) return;
     const held = current?.fingerKeys[n.finger];
-    if (!current || (held !== undefined && held !== n.midi)) {
+    const moved = last !== null && isHandMove(last.finger, n.finger, last.midi, n.midi);
+    last = { finger: n.finger, midi: n.midi };
+    if (!current || moved || (held !== undefined && held !== n.midi)) {
       current = { startIndex: index, fingerKeys: {} };
       positions.push(current);
     }

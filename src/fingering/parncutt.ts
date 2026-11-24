@@ -75,6 +75,8 @@ export function pairRules(from: Finger, to: Finger, fromMidi: number, toMidi: nu
     if (!isBlack(threeMidi) && isBlack(fourMidi)) cost += 1;
   }
   // 12 Thumb-Passing: the thumb passes under a finger, or a finger passes over the thumb.
+  // Implemented as written, but it never fires in the search: assign.ts counts every thumb pass as
+  // a hand move, and a hand move skips the pair rules (controller ruling).
   const isPass = (from === 1 && d < 0) || (to === 1 && d > 0);
   if (isPass) {
     const lowerMidi = Math.min(fromMidi, toMidi);
@@ -111,8 +113,8 @@ export function tripleRules(
     }
   }
   // 7 Three-Four-Five: fingers 3, 4 and 5 on three consecutive notes, in any order.
-  const fs = [f1, f2, f3].sort().join('');
-  if (fs === '345') cost += 1;
+  const set = new Set([f1, f2, f3]);
+  if (set.size === 3 && set.has(3) && set.has(4) && set.has(5)) cost += 1;
   return cost;
 }
 

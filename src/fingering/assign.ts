@@ -1,9 +1,9 @@
 // Fingering search: Parncutt et al. (1997) rules (parncutt.ts) plus beginner rules from the
 // design. A 5-year-old stays in five-finger positions and moves the hand only at breaks; thumb
 // passing is never taught. See docs/references/parncutt-1997-fingering-model.md.
-import { whiteIndex } from '../song/pitch';
 import type { Finger, Note } from '../song/types';
 import { noteRules, outside, pairRules, span, tripleRules } from './parncutt';
+import { keySlots, keysOff, looseSlot } from './slots';
 
 // Beginner-rule weights (ours, not the paper's). The brief's five weights are unchanged. With only
 // those, the paper's rules finger Ode to Joy's E E F G G as 2 2 3 5 5 (cost 6) rather than
@@ -25,8 +25,8 @@ export const SMALL_HAND_PER_SEMITONE = 3;
  * its own key, so a step between fingers f and g covers |f - g| white keys (in C position,
  * C D E F G = 1 2 3 4 5). From the design's five-finger-position sources (Thompson's Easiest Piano
  * Course, Piano Time 1), not from Parncutt. It is the paper's "next-note-next-finger" idea behind
- * Small/Large-Span, stated for a child. A black key counts as the white key just below it
- * (`whiteIndex`).
+ * Small/Large-Span, stated for a child. A black key takes the white-key slot the song's spelling
+ * gives it (slots.ts, controller ruling N): Bb in an F-position song takes B's slot.
  */
 export const FIVE_FINGER_POSITION_PER_KEY = 3;
 
@@ -49,9 +49,12 @@ export function isHandMove(from: Finger, to: Finger, fromMidi: number, toMidi: n
  * The cost of playing `toMidi` with `to` right after `fromMidi` with `from`: the paper's pair
  * rules plus the beginner rules. The paper's single-note rules (6, 10, 11) are not here, because
  * rules 10 and 11 need the note after as well. `assignFingering` adds them for each note.
+ * `slots` are the two notes' white-key slots from `keySlots`. Without them, each black key is
+ * tried as the white key below and the white key above, and the smaller cost counts.
  */
 export function transitionCost(
   from: Finger, to: Finger, fromMidi: number, toMidi: number, atBreak: boolean,
+  slots?: { from: number; to: number },
 ): number {
   const d = toMidi - fromMidi;
   // A hand move costs only its own price; none of the paper's pair rules apply to it.
@@ -66,27 +69,36 @@ export function transitionCost(
   return pairRules(from, to, fromMidi, toMidi)
     + (d === 0 ? REPEAT_NEW_FINGER : 0)
     + SMALL_HAND_PER_SEMITONE * outside(d, s.minComf, s.maxComf)
-    + FIVE_FINGER_POSITION_PER_KEY
-      * Math.abs(Math.abs(whiteIndex(toMidi) - whiteIndex(fromMidi)) - Math.abs(to - from));
+    + FIVE_FINGER_POSITION_PER_KEY * keysOff(
+      Math.abs(to - from), slots?.from ?? looseSlot(fromMidi), slots?.to ?? looseSlot(toMidi));
 }
 
-interface Pitched { index: number; midi: number; allowed: Finger[]; atBreak: boolean; cost: (f: Finger) => number }
+interface Pitched {
+  index: number; midi: number; slot: number; allowed: Finger[]; atBreak: boolean;
+  cost: (f: Finger) => number;
+}
 
-/** Pitched notes in order, with whether the transition into each one is at a break. */
+/**
+ * The pitches just before and after `notes[index]`, for rules 10 and 11. A rest or the edge of the
+ * song gives null: no neighbour, so that part of the rule adds nothing.
+ */
+export function neighbours(notes: Note[], index: number): { before: number | null; after: number | null } {
+  return { before: notes[index - 1]?.midi ?? null, after: notes[index + 1]?.midi ?? null };
+}
+
+/** Pitched notes in order, with their key slots and whether the transition into each is at a break. */
 function pitchedNotes(notes: Note[]): Pitched[] {
   const out: Pitched[] = [];
+  const slots = keySlots(notes);
   let lastIndex = -1;
   notes.forEach((n, index) => {
     if (n.midi === null) return;
     const midi = n.midi;
-    const prev = notes[index - 1];
-    const next = notes[index + 1];
-    const before = prev && prev.midi !== null ? prev.midi : null;
-    const after = next && next.midi !== null ? next.midi : null;
+    const { before, after } = neighbours(notes, index);
     const atBreak = lastIndex >= 0
       && (index - lastIndex > 1 || notes[lastIndex].beats >= 2);
     out.push({
-      index, midi, atBreak,
+      index, midi, atBreak, slot: slots[index]!,
       allowed: n.finger !== undefined ? [n.finger] : FINGERS,
       cost: f => noteRules(f, midi, before, after),
     });
@@ -98,8 +110,9 @@ function pitchedNotes(notes: Note[]): Pitched[] {
 /**
  * Fills in a finger for every pitched note that has none, keeping fingers already set. Rests are
  * left alone. Second-order Viterbi: a state is (previous finger, current finger), so the paper's
- * three-note rules can be scored.
- * Each note adds the single-note rules (6, 10, 11); these always apply, even on a hand move. Equal-cost paths go to the lowest finger numbers, first note first.
+ * three-note rules can be scored. Each note also adds the single-note rules (6, 10, 11), which
+ * always apply, even on a hand move. Equal-cost paths go to the lowest finger numbers, first note
+ * first.
  */
 export function assignFingering(notes: Note[]): Note[] {
   const ps = pitchedNotes(notes);
@@ -107,7 +120,7 @@ export function assignFingering(notes: Note[]): Note[] {
   if (n === 0) return notes.map(x => ({ ...x }));
 
   const trans = (i: number, a: Finger, b: Finger) =>
-    transitionCost(a, b, ps[i - 1].midi, ps[i].midi, ps[i].atBreak);
+    transitionCost(a, b, ps[i - 1].midi, ps[i].midi, ps[i].atBreak, { from: ps[i - 1].slot, to: ps[i].slot });
   const triple = (i: number, a: Finger, b: Finger, c: Finger) =>
     isHandMove(a, b, ps[i - 2].midi, ps[i - 1].midi) || isHandMove(b, c, ps[i - 1].midi, ps[i].midi)
       ? 0

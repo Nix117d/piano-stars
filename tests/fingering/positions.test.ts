@@ -22,3 +22,7 @@ test('a song starting with a rest starts its first position at the first note', 
   expect(handPositions(seq('_ C(1)')).map(x => x.startIndex)).toEqual([1]);
   expect(handPositions(seq('_ _'))).toEqual([]);
 });
+test('a hand move starts a new position, even onto an unused finger', () => {
+  // E(3) to B(4) rises 7 semitones, past 3-4's MaxPrac of 4: the hand has to lift.
+  expect(handPositions(seq('C(1) D(2) E(3) B(4)')).map(x => x.startIndex)).toEqual([0, 3]);
+});
