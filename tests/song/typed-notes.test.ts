@@ -64,4 +64,23 @@ describe('typed notes', () => {
     expect(serializeTypedNotes(80, [{ midi: 61, beats: 1 }, { midi: 72, beats: 1 }, { midi: 48, beats: 0.5, finger: 2 }]))
       .toBe('tempo 80\nC# C5 C3(2)/');
   });
+  test('explicit :N lengths', () => {
+    const r = parseTypedNotes('E:1.5 D(2):0.25 _:1.5');
+    expect(r.ok && r.notes.map(n => n.beats)).toEqual([1.5, 0.25, 1.5]);
+    expect(r.ok && r.notes[1].finger).toBe(2);
+    expect(r.ok && r.notes[2].midi).toBeNull();
+  });
+  test(':N combined with - or / or a bad number is an error', () => {
+    for (const src of ['C-:2', 'C/:2', 'C:2-', 'C:0', 'C:', 'C:x']) {
+      const r = parseTypedNotes(src);
+      expect(!r.ok && r.errors.map(e => e.code)).toEqual(['unknownNote']);
+    }
+  });
+  test('serialize is exact for odd beats', () => {
+    const notes = [1.5, 0.25, 0.75, 3].map(beats => ({ midi: 60, beats }));
+    const text = serializeTypedNotes(80, notes);
+    expect(text).toBe('tempo 80\nC:1.5 C:0.25 C:0.75 C--');
+    const r = parseTypedNotes(text);
+    expect(r.ok && r.notes).toEqual(notes);
+  });
 });

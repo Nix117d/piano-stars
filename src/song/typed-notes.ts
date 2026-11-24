@@ -16,8 +16,8 @@ const DEFAULT_TEMPO = 80;
 const MIN_TEMPO = 20;
 const MAX_TEMPO = 300;
 
-// PITCH or "_", optional "(finger)", then any number of "-" or a single "/".
-const TOKEN = /^(.*?)(?:\(([^)]*)\))?(-+|\/)?$/;
+// PITCH or "_", optional "(finger)", then any number of "-", a single "/", or an explicit ":N" length.
+const TOKEN = /^(.*?)(?:\(([^)]*)\))?(-+|\/|:.*)?$/;
 
 /** Reads typed notes like "tempo 90\nC D(2)- _ E/". Reports every error, in text order. */
 export function parseTypedNotes(text: string): TypedResult {
@@ -52,7 +52,12 @@ export function parseTypedNotes(text: string): TypedResult {
     if (midi !== null && (midi < KEYBOARD_LOW || midi > KEYBOARD_HIGH)) { fail('outOfRange'); continue; }
 
     const suffix = parts[3];
-    const beats = suffix === '/' ? 0.5 : suffix ? 1 + suffix.length : 1;
+    let beats = 1;
+    if (suffix === '/') beats = 0.5;
+    else if (suffix?.startsWith(':')) {
+      beats = /^:\d+(\.\d+)?$/.test(suffix) ? Number(suffix.slice(1)) : 0;
+      if (!(beats > 0)) { fail('unknownNote'); continue; }
+    } else if (suffix) beats = 1 + suffix.length;
     const note: Note = { midi, beats };
     if (parts[2] !== undefined) note.finger = Number(parts[2]) as Finger;
     notes.push(note);
@@ -71,7 +76,8 @@ export function serializeTypedNotes(tempo: number, notes: Note[]): string {
     }
     if (n.finger !== undefined) word += `(${n.finger})`;
     if (n.beats === 0.5) word += '/';
-    else word += '-'.repeat(Math.max(0, Math.round(n.beats) - 1));
+    else if (Number.isInteger(n.beats) && n.beats >= 1) word += '-'.repeat(n.beats - 1);
+    else word += `:${n.beats}`;
     return word;
   });
   return `tempo ${tempo}\n${words.join(' ')}`;
