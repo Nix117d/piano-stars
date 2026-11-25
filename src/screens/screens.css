@@ -100,7 +100,7 @@ button { font-family: inherit; color: inherit; cursor: pointer; touch-action: ma
 .parent-button.danger { color: #C62828; }
 .parent-button:disabled { opacity: 0.4; cursor: default; }
 .song-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
-.song-row { display: flex; align-items: center; gap: 12px; padding: 8px 16px; border-radius: 20px; background: #fff; }
+.song-row { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; padding: 8px 16px; border-radius: 20px; background: #fff; }
 .song-row[data-hidden='true'] { opacity: 0.6; }
 .row-picture { font-size: 44px; }
 .row-title { flex: 1; font-size: 22px; font-weight: 800; }

@@ -7,7 +7,7 @@ import type { ImportResult } from '../../song/import-result';
 import { parseMusicXml, parseMxl } from '../../song/musicxml';
 import { serializeTypedNotes } from '../../song/typed-notes';
 import type { Song } from '../../song/types';
-import { loadLibrary } from '../../songs/library';
+import { editedBuiltinIds, loadLibrary } from '../../songs/library';
 import { freePicture } from '../../songs/pictures';
 import { deleteSong, resetMedals, saveSong, type Settings, type Speed } from '../../store/db';
 import { ConfirmDialog } from './ConfirmDialog';
@@ -15,6 +15,7 @@ import { ImportReview } from './ImportReview';
 import { KeyboardExportGuide } from './KeyboardExportGuide';
 import { KeyboardCheck } from './KeyboardCheck';
 import { PicturePicker } from './PicturePicker';
+import { playPreview, stopPreview } from './preview';
 import { SongEditor, type EditorDraft } from './SongEditor';
 import { SongRow } from './SongRow';
 
@@ -54,6 +55,8 @@ export function ParentHome({
   source, status, startResult, onStartKeyboard, settings, settingsFailed, onChangeSettings, onSettings, onBack,
 }: ParentHomeProps) {
   const [songs, setSongs] = useState<Song[]>();
+  const [edited, setEdited] = useState<string[]>([]);
+  const [playing, setPlaying] = useState<string>();
   const [view, setView] = useState<View>({ kind: 'home' });
   const [ask, setAsk] = useState<Ask>();
   const [pictureFor, setPictureFor] = useState<Song>();
@@ -67,10 +70,14 @@ export function ParentHome({
   const loads = useRef(0);
   const refresh = async () => {
     const n = ++loads.current;
-    const lib = await loadLibrary(settings, true);
-    if (n === loads.current) setSongs(lib);
+    // loadLibrary already warns when the saved songs can't be read.
+    const [lib, ids] = await Promise.all([loadLibrary(settings, true), editedBuiltinIds().catch(() => [])]);
+    if (n === loads.current) { setSongs(lib); setEdited(ids); }
   };
   useEffect(() => { void refresh(); }, [settings]);
+  // A preview stops when the list is left (for the editor, an import or the child's screens).
+  useEffect(() => { stopPreview(); setPlaying(undefined); }, [view.kind]);
+  useEffect(() => stopPreview, []);
   if (!songs) return null;
   const lang = settings.parentLang;
   const newPicture = () => freePicture(songs.map(s => s.picture));
@@ -95,12 +102,32 @@ export function ParentHome({
       : [...settings.hiddenBuiltins, song.id],
   });
 
+  const preview = (song: Song) => {
+    if (playing === song.id) { stopPreview(); setPlaying(undefined); return; }
+    playPreview(song.tempo, song.notes, () => setPlaying(undefined));
+    setPlaying(song.id);
+  };
+
+  // Saving an edited built-in stores a copy under its id (source 'builtin'), which loadLibrary
+  // puts in the shipped song's place. The fingering source follows the usual edit rules.
   const editSong = (song: Song) => {
     const text = serializeTypedNotes(song.tempo, song.notes);
     setView({
       kind: 'editor', editing: true, draft: { title: song.title, text, picture: song.picture, original: song },
-      finish: s => ({ ...s, id: song.id, createdAt: song.createdAt, source: song.source, hidden: song.hidden }),
+      finish: s => ({
+        ...s, id: song.id, createdAt: song.createdAt, source: song.source, hidden: song.hidden,
+        ...(song.melodySource ? { melodySource: song.melodySource } : {}),
+      }),
     });
+  };
+
+  // A built-in's picture is a setting, so a picture picked in the editor goes there too.
+  const saveEdited = (view: View & { kind: 'editor' }, song: Song) => {
+    const saved = view.finish(song);
+    const pictureChanged = saved.source === 'builtin' && saved.picture !== view.draft.picture;
+    void saveSong(saved)
+      .then(() => pictureChanged ? onChangeSettings({ pictureOverrides: { ...settings.pictureOverrides, [saved.id]: saved.picture } }) : undefined)
+      .then(done).catch(fail);
   };
 
   // Names are given in list order, so each song keeps the same one between exports.
@@ -118,7 +145,7 @@ export function ParentHome({
     return (
       <>{banner}<SongEditor lang={lang} draft={view.draft} editing={view.editing}
         onCancel={() => setView({ kind: 'home' })}
-        onSave={song => void saveSong(view.finish(song)).then(done).catch(fail)} /></>
+        onSave={song => saveEdited(view, song)} /></>
     );
   }
 
@@ -147,10 +174,12 @@ export function ParentHome({
         <ul class="song-list">
           {songs.map((song, i) => (
             <SongRow key={song.id} song={song} lang={lang} speed={settings.speeds[song.id] ?? 'slow'}
+              playing={playing === song.id} edited={edited.includes(song.id)} onPreview={() => preview(song)}
               onEdit={() => editSong(song)} onPicture={() => setPictureFor(song)}
               onExport={() => { try { downloadSong(song, fileNames[i]); setGuideOpen(true); } catch (e) { fail(e); } }}
               onToggleHidden={() => void toggleHidden(song)}
               onDelete={() => setAsk({ message: t(lang, 'confirm.delete', { title: song.title }), onYes: () => void deleteSong(song.id).then(refresh).catch(fail) })}
+              onReset={() => setAsk({ message: t(lang, 'confirm.resetOriginal', { title: song.title }), onYes: () => void deleteSong(song.id).then(refresh).catch(fail) })}
               onSpeed={(s: Speed) => void onChangeSettings({ speeds: { ...settings.speeds, [song.id]: s } })} />
           ))}
         </ul>

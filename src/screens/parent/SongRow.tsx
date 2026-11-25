@@ -8,16 +8,27 @@ export interface SongRowProps {
   song: Song;
   lang: Lang;
   speed: Speed;
+  /** Its preview is playing: the Preview button reads Stop. */
+  playing: boolean;
+  /** A built-in the parent has edited: it gets Reset to original. */
+  edited: boolean;
+  onPreview: () => void;
   onEdit: () => void;
   onPicture: () => void;
   onExport: () => void;
   onToggleHidden: () => void;
   onDelete: () => void;
+  onReset: () => void;
   onSpeed: (s: Speed) => void;
 }
 
-/** One song in the parent list. Built-ins can be hidden but not edited or deleted. */
-export function SongRow({ song, lang, speed, onEdit, onPicture, onExport, onToggleHidden, onDelete, onSpeed }: SongRowProps) {
+/**
+ * One song in the parent list. Every song can be previewed and edited. Built-ins can be hidden
+ * but not deleted; an edited built-in can be reset to the shipped version.
+ */
+export function SongRow({
+  song, lang, speed, playing, edited, onPreview, onEdit, onPicture, onExport, onToggleHidden, onDelete, onReset, onSpeed,
+}: SongRowProps) {
   const builtin = song.source === 'builtin';
   const btn = (label: string, onClick: () => void, extra = '') =>
     <button type="button" class={`parent-button small ${extra}`} onClick={onClick}>{label}</button>;
@@ -35,9 +46,11 @@ export function SongRow({ song, lang, speed, onEdit, onPicture, onExport, onTogg
           {SPEEDS.map(s => <option key={s} value={s}>{t(lang, `speed.${s}`)}</option>)}
         </select>
       </label>
-      {!builtin && btn(t(lang, 'parent.edit'), onEdit)}
+      {btn(playing ? `⏹️ ${t(lang, 'song.stop')}` : `🔊 ${t(lang, 'song.preview')}`, onPreview)}
+      {btn(t(lang, 'parent.edit'), onEdit)}
       {btn(t(lang, 'parent.picture'), onPicture)}
       {btn(t(lang, 'parent.export'), onExport)}
+      {builtin && edited && btn(t(lang, 'parent.resetOriginal'), onReset)}
       {builtin
         ? btn(t(lang, song.hidden ? 'parent.show' : 'parent.hide'), onToggleHidden)
         : btn(t(lang, 'parent.delete'), onDelete, 'danger')}

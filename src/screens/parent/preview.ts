@@ -8,8 +8,11 @@ export function stopPreview(): void {
   timers = [];
 }
 
-/** Plays the notes through the synth at the song tempo; rests are silence. */
-export function playPreview(tempo: number, notes: Note[]): void {
+/**
+ * Plays the notes through the synth at the song tempo; rests are silence. `onEnd` runs when the
+ * last note is over, unless `stopPreview` (or another preview) came first.
+ */
+export function playPreview(tempo: number, notes: Note[], onEnd?: () => void): void {
   stopPreview();
   const beatMs = 60000 / tempo;
   let at = 0;
@@ -22,4 +25,5 @@ export function playPreview(tempo: number, notes: Note[]): void {
     }
     at += ms;
   }
+  if (onEnd) timers.push(setTimeout(onEnd, at));
 }

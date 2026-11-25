@@ -6,7 +6,20 @@ import { BUILTIN_SONGS, type BuiltinSong } from './builtin/index';
 
 export type Bests = Record<string, Record<Level, number>>;
 
-function builtinSong(b: BuiltinSong, settings: Settings): Song | null {
+const BUILTIN_IDS = new Set(BUILTIN_SONGS.map(b => b.id));
+
+/**
+ * A built-in as the child gets it. A stored copy (the parent edited it) takes the shipped song's
+ * place. Either way the picture override and hiding come from the settings.
+ */
+function builtinSong(b: BuiltinSong, settings: Settings, edited?: Song): Song | null {
+  const own = { hidden: settings.hiddenBuiltins.includes(b.id) };
+  if (edited) {
+    return {
+      ...edited, ...own, source: 'builtin', melodySource: edited.melodySource ?? b.melodySource,
+      picture: settings.pictureOverrides?.[b.id] ?? edited.picture,
+    };
+  }
   const parsed = parseTypedNotes(b.typed);
   if (!parsed.ok) return null; // every built-in is checked by its own tests
   return {
@@ -18,7 +31,7 @@ function builtinSong(b: BuiltinSong, settings: Settings): Song | null {
     fingeringSource: 'rules',
     melodySource: b.melodySource,
     picture: settings.pictureOverrides?.[b.id] ?? b.picture,
-    hidden: settings.hiddenBuiltins.includes(b.id),
+    ...own,
     createdAt: 0,
   };
 }
@@ -28,18 +41,25 @@ function builtinSong(b: BuiltinSong, settings: Settings): Song | null {
  * With `includeHidden` (the parent area) hidden songs stay in, marked `hidden`.
  */
 export async function loadLibrary(settings: Settings, includeHidden = false): Promise<Song[]> {
-  const builtins = BUILTIN_SONGS
-    .flatMap(b => builtinSong(b, settings) ?? [])
-    .filter(s => includeHidden || !s.hidden);
   // If IndexedDB is unavailable the built-ins must still load.
   const stored = await listUserSongs().catch((e: unknown) => {
     console.warn('Could not read the saved songs', e);
     return [] as Song[];
   });
+  const edited = new Map(stored.filter(s => BUILTIN_IDS.has(s.id)).map(s => [s.id, s]));
+  const builtins = BUILTIN_SONGS
+    .flatMap(b => builtinSong(b, settings, edited.get(b.id)) ?? [])
+    .filter(s => includeHidden || !s.hidden);
   const user = stored
+    .filter(s => !BUILTIN_IDS.has(s.id))
     .filter(s => includeHidden || !s.hidden)
     .sort((a, b) => a.createdAt - b.createdAt);
   return [...builtins, ...user];
+}
+
+/** Ids of the built-ins the parent has edited (a stored copy replaces the shipped song). */
+export async function editedBuiltinIds(): Promise<string[]> {
+  return (await listUserSongs()).filter(s => BUILTIN_IDS.has(s.id)).map(s => s.id);
 }
 
 /** Best stars so far per song and level (0 = never finished). */

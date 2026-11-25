@@ -6,7 +6,7 @@ vi.mock('../../src/songs/builtin/index', () => ({
   BUILTIN_SONGS: [{ id: 'cde', title: 'CDE', picture: '🐸', typed: 'C D E', melodySource: 'test' }],
 }));
 
-import { loadBests, loadLibrary } from '../../src/songs/library';
+import { editedBuiltinIds, loadBests, loadLibrary } from '../../src/songs/library';
 import { freePicture, PICTURES } from '../../src/songs/pictures';
 import { DEFAULT_SETTINGS, recordResult, saveSong } from '../../src/store/db';
 import type { Song } from '../../src/song/types';
@@ -31,6 +31,17 @@ test('user songs follow the built-ins, oldest first, minus hidden ones', async (
   await saveSong(userSong('a-old', false, 10));
   await saveSong(userSong('hidden', true, 5));
   expect((await loadLibrary(DEFAULT_SETTINGS)).map(s => s.id)).toEqual(['cde', 'a-old', 'b-new']);
+});
+
+test('a stored copy of a built-in takes the shipped one\'s place', async () => {
+  await saveSong({ ...userSong('cde', false, 0), title: 'CDE', source: 'builtin', notes: [{ midi: 67, beats: 1, finger: 1 }] });
+  await saveSong(userSong('mine', false, 10));
+  const lib = await loadLibrary({ ...DEFAULT_SETTINGS, pictureOverrides: { cde: '🦊' } });
+  expect(lib.map(s => s.id)).toEqual(['cde', 'mine']);
+  expect(lib[0]).toMatchObject({ source: 'builtin', notes: [{ midi: 67 }], picture: '🦊', hidden: false });
+  // Hiding goes by the settings, as for any built-in.
+  expect((await loadLibrary({ ...DEFAULT_SETTINGS, hiddenBuiltins: ['cde'] })).map(s => s.id)).toEqual(['mine']);
+  expect(await editedBuiltinIds()).toEqual(['cde']);
 });
 
 test('loadBests reads the best stars per level', async () => {

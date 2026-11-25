@@ -15,7 +15,7 @@ import { ParentHome } from '../../src/screens/parent/ParentHome';
 import { SongEditor } from '../../src/screens/parent/SongEditor';
 import { songFromImport, songFromTyped } from '../../src/screens/parent/song-factory';
 import { loadLibrary } from '../../src/songs/library';
-import { DEFAULT_SETTINGS, getBest, getSettings, listUserSongs, recordResult, saveSong } from '../../src/store/db';
+import { DEFAULT_SETTINGS, getBest, getSettings, listUserSongs, recordResult, saveSong, updateSettings } from '../../src/store/db';
 import { useSettings } from '../../src/store/use-settings';
 import type { Song } from '../../src/song/types';
 import { serializeTypedNotes } from '../../src/song/typed-notes';
@@ -144,11 +144,11 @@ test('reset medals asks first', async () => {
   await waitFor(async () => expect(await getBest('cde', 1)).toBe(0));
 });
 
-test('built-ins can be hidden, get a speed and a picture, but not deleted or edited', async () => {
+test('built-ins can be hidden, get a speed and a picture, but not deleted', async () => {
   home();
   const row = await screen.findByTestId('parent-song-cde');
   expect(within(row).queryByRole('button', { name: 'Delete' })).toBeNull();
-  expect(within(row).queryByRole('button', { name: 'Edit' })).toBeNull();
+  expect(within(row).queryByRole('button', { name: 'Reset to original' })).toBeNull();
   fireEvent.change(within(row).getByLabelText('Speed Test'), { target: { value: 'medium' } });
   await waitFor(async () => expect((await getSettings()).speeds).toEqual({ cde: 'medium' }));
   fireEvent.click(within(row).getByRole('button', { name: 'Picture' }));
@@ -159,6 +159,64 @@ test('built-ins can be hidden, get a speed and a picture, but not deleted or edi
   expect(await loadLibrary(await getSettings())).toHaveLength(0);
   expect(await loadLibrary(await getSettings(), true)).toHaveLength(1);
   expect(await within(await screen.findByTestId('parent-song-cde')).findByRole('button', { name: 'Show' })).toBeTruthy();
+});
+
+test('every song row has Preview, which plays the song and turns into Stop', async () => {
+  const play = vi.spyOn(synth, 'playNote').mockImplementation(() => {});
+  await saveSong(userSong('mine'));
+  home();
+  const row = await screen.findByTestId('parent-song-cde');
+  await screen.findByTestId('parent-song-mine');
+  vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
+  fireEvent.click(within(row).getByRole('button', { name: /Preview/ }));
+  expect(within(row).getByRole('button', { name: /Stop/ })).toBeTruthy();
+  act(() => { vi.advanceTimersByTime(10_000); });
+  expect(play.mock.calls.map(c => c[0])).toEqual([60, 62, 64]); // the built-in, C D E
+  expect(within(row).getByRole('button', { name: /Preview/ })).toBeTruthy(); // done: back to Preview
+  // Stop ends it early; a user song has Preview too.
+  play.mockClear();
+  const mine = screen.getByTestId('parent-song-mine');
+  fireEvent.click(within(row).getByRole('button', { name: /Preview/ }));
+  fireEvent.click(within(row).getByRole('button', { name: /Stop/ }));
+  fireEvent.click(within(mine).getByRole('button', { name: /Preview/ }));
+  act(() => { vi.advanceTimersByTime(10_000); });
+  expect(play.mock.calls.map(c => c[0])).toEqual([60]); // only mine: the built-in was stopped before its first note
+  expect(within(row).getByRole('button', { name: /Preview/ })).toBeTruthy();
+});
+
+test('editing a built-in replaces it for the child, and Reset brings back the original', async () => {
+  home();
+  fireEvent.click(within(await screen.findByTestId('parent-song-cde')).getByRole('button', { name: 'Edit' }));
+  fireEvent.input(screen.getByLabelText('Notes'), { target: { value: 'tempo 100\nG A B' } });
+  fireEvent.click(screen.getByRole('button', { name: 'Save' }));
+  await screen.findByTestId('parent-home');
+  const stored = await listUserSongs();
+  expect(stored).toHaveLength(1);
+  expect(stored[0]).toMatchObject({ id: 'cde', source: 'builtin', title: 'Test', tempo: 100, fingeringSource: 'rules' });
+  const child = await loadLibrary(await getSettings());
+  expect(child).toHaveLength(1);
+  expect(child[0]).toMatchObject({ id: 'cde', source: 'builtin' });
+  expect(child[0].notes.map(n => n.midi)).toEqual([67, 69, 71]);
+  // Still a built-in in the list: one row, no Delete, and now Reset to original (asks first).
+  expect(screen.getAllByTestId(/^parent-song-/)).toHaveLength(1);
+  const row = screen.getByTestId('parent-song-cde');
+  expect(within(row).queryByRole('button', { name: 'Delete' })).toBeNull();
+  fireEvent.click(await within(row).findByRole('button', { name: 'Reset to original' }));
+  expect(screen.getByTestId('confirm-dialog')).toHaveTextContent('Test');
+  fireEvent.click(screen.getByRole('button', { name: 'Yes' }));
+  await waitFor(async () => expect(await listUserSongs()).toHaveLength(0));
+  expect((await loadLibrary(await getSettings()))[0].notes.map(n => n.midi)).toEqual([60, 62, 64]);
+  await waitFor(() => expect(within(screen.getByTestId('parent-song-cde')).queryByRole('button', { name: 'Reset to original' })).toBeNull());
+});
+
+test('a picture picked while editing a built-in sticks', async () => {
+  await updateSettings({ pictureOverrides: { cde: '🎈' } }); // picked earlier from the row
+  home();
+  fireEvent.click(within(await screen.findByTestId('parent-song-cde')).getByRole('button', { name: 'Edit' }));
+  fireEvent.click(within(screen.getByTestId('song-editor')).getByRole('button', { name: '🦊' }));
+  fireEvent.click(screen.getByRole('button', { name: 'Save' }));
+  await screen.findByTestId('parent-home');
+  await waitFor(async () => expect((await loadLibrary(await getSettings()))[0].picture).toBe('🦊'));
 });
 
 test('editing a saved song keeps its id', async () => {
