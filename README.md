@@ -29,7 +29,9 @@ Three Sinterklaas songs are left out: "Hoor wie klopt daar, kind'ren", "De zak v
 
 **Songs you add yourself.** Some songs are still under copyright, so the app can't include them. This covers Pietengym, Tamo daleko, the Pink Panther theme and Crni leptir. You can add any song you are allowed to use:
 
-- *Where to find a file.* Look for sheet music you have the right to use: for example a licensed arrangement on MuseScore (musescore.com), or a digital score you buy from a sheet-music shop. Piano Stars reads MusicXML (`.musicxml`, `.xml`, `.mxl`) and MIDI (`.mid`) files. Download the file onto the tablet.
+- *Where to find a file.* Look for sheet music you have the right to use. Piano Stars reads MusicXML (`.musicxml`, `.xml`, `.mxl`) and MIDI (`.mid`) files. Download the file onto the tablet.
+  - *MuseScore (musescore.com).* Use a **community** score (one uploaded by a MuseScore user). With a MuseScore Pro account you can download it as MIDI or MusicXML (up to 20 scores a day). MuseScore's **Official** scores can't be downloaded in either format on any plan. You can only play them on the website.
+  - *Sheet-music shops.* These usually sell PDFs, which Piano Stars can't read. Use **Type notes** (below) to copy the melody in from the PDF.
 - *Loading it.* In the parent area tap **Add from file** and pick the file. Piano Stars shows what it read, with the notes and finger numbers. Press **Preview** to listen, fix anything with **Fix notes**, then **Save**. It keeps only the melody (the top line), and picks fingers for a small right hand unless the file has its own.
 - *Typing it.* You can also tap **Type notes** and write the melody as letters, for example `E D C D E E E-`. A **Preview** button plays it back.
 
