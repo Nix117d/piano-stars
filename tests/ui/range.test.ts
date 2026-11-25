@@ -1,6 +1,6 @@
 import { expect, test } from 'vitest';
 import { visibleRange } from '../../src/ui/range';
-import { keyColor, NOTE_COLORS, textOn } from '../../src/ui/colors';
+import { contrastRatio, keyColor, NOTE_COLORS, textOn } from '../../src/ui/colors';
 
 test('visibleRange whole octaves, at least one', () => {
   expect(visibleRange([60, 67])).toEqual({ low: 60, high: 72 });
@@ -24,6 +24,20 @@ test('visibleRange of no notes defaults to the middle-C octave', () => {
 });
 
 test('textOn: dark text on light colours, white on dark ones', () => {
-  expect(textOn(NOTE_COLORS.E)).toBe('#1a1a1a');
-  expect(textOn(NOTE_COLORS.A)).toBe('#fff');
+  for (const l of ['C', 'D', 'E', 'F', 'G', 'A'] as const) expect(textOn(NOTE_COLORS[l]), l).toBe('#000000');
+  expect(textOn(NOTE_COLORS.B)).toBe('#ffffff');
+});
+
+test('contrastRatio follows WCAG 2', () => {
+  expect(contrastRatio('#000000', '#ffffff')).toBeCloseTo(21, 5);
+  expect(contrastRatio('#ffffff', '#ffffff')).toBeCloseTo(1, 5);
+});
+
+test('finger numbers are readable on every key colour (WCAG AA, 4.5:1)', () => {
+  for (const [letter, color] of Object.entries(NOTE_COLORS)) {
+    expect(contrastRatio(color, textOn(color)), letter).toBeGreaterThanOrEqual(4.5);
+  }
+  for (const midi of [61, 63, 66, 68, 70]) { // the black keys, darkened
+    expect(contrastRatio(keyColor(midi), textOn(keyColor(midi))), String(midi)).toBeGreaterThanOrEqual(4.5);
+  }
 });

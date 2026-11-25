@@ -17,10 +17,27 @@ export function keyColor(midi: number): string {
   return darken(NOTE_COLORS[midiToName(midi - 1).letter], 0.65);
 }
 
-/** Readable text colour for a hex background: dark on light colours, white on dark ones. */
-export function textOn(color: string): string {
+/** WCAG 2 relative luminance of a #rrggbb colour. */
+function luminance(color: string): number {
   const n = parseInt(color.slice(1), 16);
   const lin = (c: number) => { const v = c / 255; return v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4; };
-  const lum = 0.2126 * lin((n >> 16) & 255) + 0.7152 * lin((n >> 8) & 255) + 0.0722 * lin(n & 255);
-  return lum > 0.4 ? '#1a1a1a' : '#fff';
+  return 0.2126 * lin((n >> 16) & 255) + 0.7152 * lin((n >> 8) & 255) + 0.0722 * lin(n & 255);
+}
+
+/** WCAG 2 contrast ratio of two #rrggbb colours, from 1 to 21. */
+export function contrastRatio(a: string, b: string): number {
+  const [hi, lo] = [luminance(a), luminance(b)].sort((x, y) => y - x);
+  return (hi + 0.05) / (lo + 0.05);
+}
+
+const DARK_TEXT = '#000000';
+const LIGHT_TEXT = '#ffffff';
+
+/**
+ * Readable text colour for a #rrggbb background: whichever of black and white has the higher
+ * contrast (the switch is at a luminance of about 0.18). Every note colour then reaches 4.5:1.
+ * Black rather than a softer dark grey, because C's red only reaches 4.5:1 against pure black.
+ */
+export function textOn(color: string): string {
+  return contrastRatio(color, DARK_TEXT) >= contrastRatio(color, LIGHT_TEXT) ? DARK_TEXT : LIGHT_TEXT;
 }
