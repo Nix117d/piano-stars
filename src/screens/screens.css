@@ -54,6 +54,14 @@ button { font-family: inherit; color: inherit; cursor: pointer; touch-action: ma
 .stage .keyboard-scroll { scroll-behavior: smooth; }
 .stage .key-strip { flex: none; margin-top: 10px; }
 
+/* Level 2: count-in dots and the falling bubbles */
+.count-in { display: flex; align-items: center; justify-content: flex-end; gap: 14px; width: 420px; }
+.count-dot { width: 28px; height: 28px; border-radius: 50%; background: #E8E0D0; transition: background 120ms; }
+.count-dot[data-filled='true'] { background: #FB8C00; }
+.falling-lane { position: relative; flex: none; height: 150px; overflow: hidden; }
+.falling-lane .bubble { position: absolute; top: 0; animation: none; will-change: transform; }
+.play-now-line { position: absolute; left: 0; right: 0; bottom: 0; height: 4px; background: #FB8C00; border-radius: 2px; opacity: 0.8; }
+
 /* Plug-in screen, over the paused song */
 .plug-screen { z-index: 10; align-items: center; background: rgba(255, 248, 231, 0.97); }
 .plug-screen .top-bar { align-self: stretch; }

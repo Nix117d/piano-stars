@@ -3,11 +3,12 @@ import { FakeSource } from './midi/fake-source';
 import { MidiInput } from './midi/midi-input';
 import type { NoteSource } from './midi/note-source';
 import { Level1Session } from './play/level1';
-import { starsLevel1, type Stars } from './play/scoring';
+import { starsLevel1, starsLevel2, type Stars } from './play/scoring';
 import { HandPlacement } from './screens/HandPlacement';
 import { Medals } from './screens/Medals';
 import { Picker } from './screens/Picker';
 import { PlayLevel1 } from './screens/PlayLevel1';
+import { PlayLevel2 } from './screens/PlayLevel2';
 import { PlugIn } from './screens/PlugIn';
 import { Results } from './screens/Results';
 import type { Song } from './song/types';
@@ -19,9 +20,9 @@ type StartResult = Awaited<ReturnType<MidiInput['start']>>;
 
 export type Route =
   | { screen: 'picker' }
-  | { screen: 'hand'; song: Song; session: Level1Session }
+  | { screen: 'hand'; song: Song; session: Level1Session; level: Level }
   | { screen: 'play1'; song: Song; session: Level1Session }
-  | { screen: 'play2'; song: Song }
+  | { screen: 'play2'; song: Song; startTime: number }
   | { screen: 'results'; song: Song; level: Level; stars: Stars }
   | { screen: 'medals' }
   | { screen: 'parent' };
@@ -83,9 +84,10 @@ export function App({ source: given }: { source?: NoteSource }) {
   const lang = settings.childLang;
   const toPicker = () => setRoute({ screen: 'picker' });
 
-  const startLevel1 = (song: Song) => {
+  // Both levels start on the hand screen; level 2's session only finds the first note there.
+  const startSong = (song: Song, level: Level) => {
     const session = new Level1Session(song.notes);
-    if (session.current()) setRoute({ screen: 'hand', song, session });
+    if (session.current()) setRoute({ screen: 'hand', song, session, level });
   };
 
   // Asking for MIDI on a tap lets Chrome show its permission prompt. Until it gives 'ok', the next tap tries again.
@@ -101,8 +103,7 @@ export function App({ source: given }: { source?: NoteSource }) {
 
   const pick = (song: Song, level: Level) => {
     startSource();
-    if (level === 1) startLevel1(song);
-    else setRoute({ screen: 'play2', song });
+    startSong(song, level);
   };
 
   const finish = (song: Song, level: Level, stars: Stars) => {
@@ -127,7 +128,9 @@ export function App({ source: given }: { source?: NoteSource }) {
     case 'hand':
       body = (
         <HandPlacement {...playProps} song={route.song} session={route.session}
-          onStart={() => setRoute({ screen: 'play1', song: route.song, session: route.session })} />
+          onStart={time => setRoute(route.level === 1
+            ? { screen: 'play1', song: route.song, session: route.session }
+            : { screen: 'play2', song: route.song, startTime: time })} />
       );
       break;
     case 'play1':
@@ -137,12 +140,16 @@ export function App({ source: given }: { source?: NoteSource }) {
       );
       break;
     case 'play2':
-      body = <Placeholder testId="play2-placeholder" icon={'🥁'} onBack={toPicker} />;
+      body = (
+        <PlayLevel2 {...playProps} song={route.song} startTime={route.startTime}
+          speed={settings.speeds[route.song.id] ?? 'slow'} metronome={settings.metronomeClick}
+          onDone={result => finish(route.song, 2, starsLevel2(result))} />
+      );
       break;
     case 'results':
       body = (
         <Results song={route.song} stars={route.stars} lang={lang} celebrationSound={settings.celebrationSound}
-          onAgain={() => (route.level === 1 ? startLevel1(route.song) : setRoute({ screen: 'play2', song: route.song }))}
+          onAgain={() => startSong(route.song, route.level)}
           onOther={toPicker} />
       );
       break;
@@ -162,7 +169,7 @@ export function App({ source: given }: { source?: NoteSource }) {
   );
 }
 
-/** Stand-in for screens later tasks build (level 2, the parent area). */
+/** Stand-in for screens later tasks build (the parent area). */
 function Placeholder({ testId, icon, onBack }: { testId: string; icon: string; onBack: () => void }) {
   return (
     <div class="screen placeholder-screen" data-testid={testId}>

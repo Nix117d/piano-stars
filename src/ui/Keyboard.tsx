@@ -9,6 +9,8 @@ export interface KeyboardProps {
   glow?: { midi: number; finger?: Finger };
   wobble?: number;
   sparkle?: number;
+  /** A close-but-not-on-time note gets a smaller sparkle. */
+  sparkleSize?: 'big' | 'small';
   middleC?: boolean;
   onTap?: (midi: number) => void;
   /** Change this to replay wobble/sparkle on a key that is already animating. */
@@ -17,7 +19,7 @@ export interface KeyboardProps {
   labels?: Partial<Record<number, Finger>>;
 }
 
-export function Keyboard({ low, high, glow, wobble, sparkle, middleC, onTap, feedbackId, labels }: KeyboardProps) {
+export function Keyboard({ low, high, glow, wobble, sparkle, sparkleSize, middleC, onTap, feedbackId, labels }: KeyboardProps) {
   const midis: number[] = [];
   for (let m = low; m <= high; m++) midis.push(m);
   const first = whiteIndex(low);
@@ -46,6 +48,7 @@ export function Keyboard({ low, high, glow, wobble, sparkle, middleC, onTap, fee
             data-glow={isGlow ? 'true' : undefined}
             data-wobble={wobble === m ? 'true' : undefined}
             data-sparkle={sparkle === m ? 'true' : undefined}
+            data-sparkle-size={sparkle === m ? sparkleSize ?? 'big' : undefined}
             style={style}
             onPointerDown={() => onTap?.(m)}
           >

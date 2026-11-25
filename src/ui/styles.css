@@ -15,6 +15,8 @@
 .key[data-wobble='true'] { animation: key-wobble 300ms ease-in-out; }
 .key-sparkle { position: absolute; top: 20%; left: 50%; font-size: 40px; color: #FDD835; pointer-events: none; animation: key-sparkle 400ms ease-out forwards; }
 
+.key[data-sparkle-size='small'] .key-sparkle { font-size: 22px; }
+
 @keyframes key-glow { 0%, 100% { box-shadow: 0 0 8px 2px var(--key-color); } 50% { box-shadow: 0 0 28px 10px var(--key-color); } }
 @keyframes key-wobble { 0%, 100% { translate: 0 0; } 25% { translate: -6px 0; } 75% { translate: 6px 0; } }
 @keyframes key-sparkle { from { opacity: 1; transform: translateX(-50%) scale(0.4); } to { opacity: 0; transform: translateX(-50%) scale(2) translateY(-30px); } }

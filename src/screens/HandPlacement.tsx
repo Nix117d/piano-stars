@@ -20,8 +20,8 @@ export interface HandPlacementProps {
   lang: Lang;
   paused: boolean;
   tapMode: boolean;
-  /** Called once the first note's key was pressed; the session already counted it. */
-  onStart: () => void;
+  /** Called once the first note's key was pressed (with the press time); the session already counted it. */
+  onStart: (time: number) => void;
   onHome: () => void;
 }
 
@@ -39,18 +39,18 @@ export function HandPlacement({ song, session, source, lang, paused, tapMode, on
   const labels: Partial<Record<number, Finger>> = {};
   for (const [finger, midi] of Object.entries(fingerKeys)) labels[midi] = Number(finger) as Finger;
 
-  const handle = (midi: number) => {
+  const handle = (midi: number, time = performance.now()) => {
     if (paused || !first) return;
     if (midi === first.midi) {
       session.press(midi);
-      onStart();
+      onStart(time);
     } else {
       setWobble(w => ({ midi, id: (w?.id ?? 0) + 1 }));
     }
   };
   const handleRef = useRef(handle);
   handleRef.current = handle;
-  useEffect(() => source.onNoteOn(e => handleRef.current(e.midi)), [source]);
+  useEffect(() => source.onNoteOn(e => handleRef.current(e.midi, e.time)), [source]);
 
   const handX = thumbX !== null && pinkyX !== null ? (thumbX + pinkyX) / 2 : null;
   return (

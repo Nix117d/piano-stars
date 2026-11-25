@@ -44,6 +44,34 @@ export function useKeyX(stage: RefObject<HTMLElement | null>, midi: number | und
   return x;
 }
 
+/** The x position of each key's centre (as in `useKeyX`), for several keys at once; they follow the keyboard's scrolling. */
+export function useKeyXs(stage: RefObject<HTMLElement | null>, midis: number[]): Record<number, number> {
+  const [xs, setXs] = useState<Record<number, number>>({});
+  const wanted = midis.join(',');
+  useLayoutEffect(() => {
+    const root = stage.current;
+    const scroller = root?.querySelector<HTMLElement>('.keyboard-scroll');
+    if (!root || !scroller) return;
+    const update = () => {
+      const offset = scroller.getBoundingClientRect().left - root.getBoundingClientRect().left;
+      const next: Record<number, number> = {};
+      for (const midi of midis) {
+        const key = root.querySelector<HTMLElement>(`[data-testid="key-${midi}"]`);
+        if (key) next[midi] = offset + key.offsetLeft + (isBlack(midi) ? 0 : key.offsetWidth / 2) - scroller.scrollLeft;
+      }
+      setXs(next);
+    };
+    update();
+    scroller.addEventListener('scroll', update);
+    window.addEventListener('resize', update);
+    return () => {
+      scroller.removeEventListener('scroll', update);
+      window.removeEventListener('resize', update);
+    };
+  }, [stage, wanted]);
+  return xs;
+}
+
 /** "C", "F#": the letter a child sees on the key. */
 export function noteLabel(midi: number): string {
   const { letter, sharp } = midiToName(midi);
