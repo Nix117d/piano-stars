@@ -1,6 +1,7 @@
 import { whiteIndex } from '../song/pitch';
 import type { Finger, Note } from '../song/types';
 import { isHandMove } from './assign';
+import { keySlots, looseSlot } from './slots';
 
 export interface HandPosition {
   /** Index into the song's notes (rests included) of the first note in this position. */
@@ -56,4 +57,18 @@ function fillUnusedFingers(keys: Partial<Record<Finger, number>>): void {
     const nearest = used.reduce((a, b) => (Math.abs(b - f) < Math.abs(a - f) ? b : a));
     keys[f] = whiteKey(whiteIndex(keys[nearest]!) + (f - nearest));
   }
+}
+
+/**
+ * White keys from the thumb's key to the little finger's key, both counted (C position is 5).
+ * A black key counts as the white-key slot the song's spelling gives it (`keySlots`); one that
+ * could take either slot is read the narrower way.
+ */
+export function positionWidth(notes: Note[], position: HandPosition): number {
+  const slots = keySlots(notes);
+  const slotOf = (midi: number) => {
+    const i = notes.findIndex(n => n.midi === midi);
+    return i >= 0 ? slots[i]! : looseSlot(midi);
+  };
+  return Math.floor(slotOf(position.fingerKeys[5]!)) - Math.ceil(slotOf(position.fingerKeys[1]!)) + 1;
 }

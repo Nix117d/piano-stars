@@ -1,5 +1,6 @@
 import { expect, test } from 'vitest';
-import { assignFingering, crossesOnStep } from '../../src/fingering/assign';
+import { assignFingering, crossesOnStep, MAX_POSITION_WIDTH } from '../../src/fingering/assign';
+import { handPositions, positionWidth } from '../../src/fingering/positions';
 import { parseTypedNotes } from '../../src/song/typed-notes';
 import { BUILTIN_SONGS } from '../../src/songs/builtin/index';
 
@@ -17,6 +18,16 @@ test('generated fingering has no crossings on steps', () => {
   for (const b of BUILTIN_SONGS) {
     const r = parseTypedNotes(b.typed); if (!r.ok) continue;
     expect(crossesOnStep(assignFingering(r.notes)), b.id).toEqual([]);
+  }
+});
+
+test('every hand position of every built-in spans at most 6 white keys', () => {
+  for (const b of BUILTIN_SONGS) {
+    const r = parseTypedNotes(b.typed); if (!r.ok) continue;
+    const f = assignFingering(r.notes);
+    for (const p of handPositions(f)) {
+      expect(positionWidth(f, p), `${b.id} @${p.startIndex}`).toBeLessThanOrEqual(MAX_POSITION_WIDTH);
+    }
   }
 });
 

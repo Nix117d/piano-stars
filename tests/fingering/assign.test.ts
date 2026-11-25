@@ -1,9 +1,10 @@
 import { expect, test } from 'vitest';
 import {
-  assignFingering, crossesOnStep, HAND_MOVE_AT_BREAK, HAND_MOVE_CROSSING, HAND_MOVE_LIFT, neighbours, transitionCost,
+  assignFingering, crossesOnStep, HAND_MOVE_AT_BREAK, HAND_MOVE_CROSSING, HAND_MOVE_LIFT, MAX_POSITION_WIDTH,
+  neighbours, transitionCost,
 } from '../../src/fingering/assign';
 import { SPAN_TABLE } from '../../src/fingering/parncutt';
-import { handPositions } from '../../src/fingering/positions';
+import { handPositions, positionWidth } from '../../src/fingering/positions';
 import { parseTypedNotes } from '../../src/song/typed-notes';
 
 const seq = (s: string) => { const r = parseTypedNotes(s); if (!r.ok) throw new Error(); return r.notes; };
@@ -88,4 +89,23 @@ test('rests are left alone', () => {
   const f = assignFingering(seq('C _ D'));
   expect(f[1]).toEqual({ midi: null, beats: 1 });
   expect(f.map(n => n.finger)).toEqual([1, undefined, 2]);
+});
+
+test('a five-finger position spans at most 6 white keys', () => {
+  expect(MAX_POSITION_WIDTH).toBe(6);
+  // Zie ginds' opening: the search alone keeps C to Bb (7 white keys) under one hand.
+  const f = assignFingering(seq('C F F A G G A# E E G F-'));
+  const widths = handPositions(f).map(p => positionWidth(f, p));
+  expect(Math.max(...widths)).toBeLessThanOrEqual(MAX_POSITION_WIDTH);
+  expect(crossesOnStep(f)).toEqual([]);
+});
+test('the extra hand move goes at a break inside the wide position when there is one', () => {
+  // C to B is 7 white keys. The search alone plays C E G B in one position; the long E is the break.
+  const f = assignFingering(seq('C E- G B'));
+  expect(handPositions(f).map(p => p.startIndex)).toEqual([0, 2]);
+  expect(f.map(n => n.finger)).toEqual([1, 3, 1, 3]);
+});
+test('fingers set by the sheet or parent are kept even when the position is wide', () => {
+  const f = assignFingering(seq('C(1) E(3) B(5)'));
+  expect(f.map(n => n.finger)).toEqual([1, 3, 5]);
 });

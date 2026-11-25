@@ -1,6 +1,6 @@
 import { expect, test } from 'vitest';
 import { assignFingering } from '../../src/fingering/assign';
-import { handPositions } from '../../src/fingering/positions';
+import { handPositions, positionWidth } from '../../src/fingering/positions';
 import { parseTypedNotes } from '../../src/song/typed-notes';
 
 const seq = (s: string) => { const r = parseTypedNotes(s); if (!r.ok) throw new Error(); return r.notes; };
@@ -44,4 +44,13 @@ test('no built-in position puts two fingers on one key (Bella Ciao did)', async 
       expect(new Set(keys).size, `${b.id} @${x.startIndex}`).toBe(keys.length);
     }
   }
+});
+test('positionWidth counts white keys from the thumb key to the little-finger key', () => {
+  const wide = seq('C(1) E(2) G(3) A(4) B(5)');
+  expect(positionWidth(wide, handPositions(wide)[0])).toBe(7);
+  const c = seq('C(1) G(5)');
+  expect(positionWidth(c, handPositions(c)[0])).toBe(5);
+  // Bb next to A (and no B) takes B's slot: F G A Bb C is F position, 5 keys.
+  const f = seq('F(1) A(3) A#(4) C5(5)');
+  expect(positionWidth(f, handPositions(f)[0])).toBe(5);
 });
