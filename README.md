@@ -2,6 +2,37 @@
 
 An offline piano-learning app (Preact + TypeScript PWA) for a Samsung Galaxy Tab S7+ in Chrome, with a Yamaha PSR-E373 keyboard connected over USB (Web MIDI).
 
+## Quick start for parents
+
+Plug the keyboard into the tablet with the USB cable, open Piano Stars and let your child pick a song. The rest of this section is for you.
+
+**Opening the parent area.** Hold the faint button in the top-left corner of the song list for 3 seconds. A ring fills up while you hold; letting go early does nothing, so a child tapping it won't get in. The parent area is where you add, edit, hide and preview songs, and where Settings is.
+
+**The first song.** The first time a song starts, Chrome asks whether Piano Stars may use MIDI devices. Tap **Allow**. Without it the app can't hear the keyboard. If you tapped Block by mistake, allow MIDI again for the site in Chrome's site settings.
+
+**Level 2 (rhythm).** Level 1 waits for each key, with no timer. Level 2 adds a steady beat. It is off by default. To switch it on, go to the parent area, then **Settings**, then **Level 2**. Each song card then shows both levels. The song list has a speed per song for level 2 (slow to start with).
+
+**Typing notes: the default octave.** A plain letter (C, D, E...) means the octave that starts at middle C, so `C` is middle C and `B` is the B just above it. Add a number for other octaves: `C5` is the next C up, `G3` is the G just below middle C. The full typing guide is under "Adding songs" below.
+
+**Built-in songs.** Six songs are included, all from sheet music that is free to use (sources in [docs/songs-sources.md](docs/songs-sources.md)):
+
+- Zie, ginds komt de stoomboot
+- Sinterklaas kapoentje
+- O, kom er eens kijken
+- Sinterklaasje, bonne, bonne, bonne
+- Bella Ciao
+- Für Elise (just the famous opening)
+
+Three Sinterklaas songs are left out: "Hoor wie klopt daar, kind'ren", "De zak van Sinterklaas" and "Dag, Sinterklaasje". No old, free-to-use printed music for them could be found, and the app never uses a melody written down from memory. You can add them yourself (see below).
+
+**Songs you add yourself.** Some songs are still under copyright, so the app can't include them. This covers Pietengym, Tamo daleko, the Pink Panther theme and Crni leptir. You can add any song you are allowed to use:
+
+- *Where to find a file.* Look for sheet music you have the right to use: for example a licensed arrangement on MuseScore (musescore.com), or a digital score you buy from a sheet-music shop. Piano Stars reads MusicXML (`.musicxml`, `.xml`, `.mxl`) and MIDI (`.mid`) files. Download the file onto the tablet.
+- *Loading it.* In the parent area tap **Add from file** and pick the file. Piano Stars shows what it read, with the notes and finger numbers. Press **Preview** to listen, fix anything with **Fix notes**, then **Save**. It keeps only the melody (the top line), and picks fingers for a small right hand unless the file has its own.
+- *Typing it.* You can also tap **Type notes** and write the melody as letters, for example `E D C D E E E-`. A **Preview** button plays it back.
+
+**The listening check.** Before your child learns a built-in song, listen to it once. In the parent area, press **Preview** on the song (it becomes **Stop** while it plays). If a note sounds wrong, tap **Edit** to fix it. **Reset to original** puts the shipped version back.
+
 ## Run it
 
 ```
