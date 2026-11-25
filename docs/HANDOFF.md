@@ -34,7 +34,7 @@
 ### 1. Try it on the tablet and listen to the built-in songs (about 20 min)
 
 - On the Mac, start the dev server (`npm run dev` in `piano-stars/`, or ask Claude to start it).
-- On the tablet, open `http://<mac-ip>:5173`. The Mac's address was `10.0.10.71` today and may change.
+- On the tablet, open `http://<mac-ip>:5173`. (System Settings → Network shows the Mac's address.)
 - The Chrome flag you set yesterday ("Insecure origins treated as secure") must list the current address.
 - Open the parent area (hold the faint top-left button for 3 seconds). Press **Preview** on each built-in song and check that it sounds right:
   - Zie, ginds komt de stoomboot
@@ -109,7 +109,7 @@ Each line is a call Claude made during the build, and what it costs if it's wron
 - **W.** There is one shared copy of the settings, so changes in the parent area and in Settings can't undo each other. *Cost: none.*
 - **X.** Built-in songs can be edited. The edit is saved as a copy with "Reset to original". *Cost: if a future version removed a song you had edited, the copy couldn't be deleted. It's a small fix if that ever happens.*
 - **Y.** The screen stays on while playing, and Level 2 pauses while the app is hidden. *Cost: battery use during play.*
-- **Z.** A hand position may span at most 6 white keys. Für Elise is cut to its opening theme. *Cost: a few more hand moves in some songs, and a very short Für Elise (your call, step 1).*
+- **Z.** A hand position may span at most 6 white keys. Für Elise covers its whole opening section (bars 1–22, right hand, A minor). *Cost: a few more hand moves in some songs; Für Elise needs about one hand move per bar, so it is the hardest built-in.*
 - **AA.** Smaller fixes before handing it to your son:
   - parent quick start in the README;
   - finger numbers readable on every key colour;

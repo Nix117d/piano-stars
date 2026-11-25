@@ -11,6 +11,7 @@ export const pwaOptions: Partial<VitePWAOptions> = {
     short_name: 'Piano Stars',
     display: 'fullscreen',
     orientation: 'landscape',
+    lang: 'nl',
     theme_color: '#43A047',
     background_color: '#43A047',
     icons: [
@@ -22,6 +23,8 @@ export const pwaOptions: Partial<VitePWAOptions> = {
 };
 
 export default defineConfig({
+  // GitHub Pages serves the app from /piano-stars/; scripts/deploy.sh sets BASE_PATH for that build.
+  base: process.env.BASE_PATH ?? '/',
   plugins: [preact(), VitePWA(pwaOptions)],
   server: { host: true },
   // midi-test.html is a dev-only tool: the dev server still serves it, the production build leaves it out.

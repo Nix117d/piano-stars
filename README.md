@@ -100,6 +100,16 @@ Storage Mode must be OFF again before playing with Piano Stars.
 - Built-in melodies and their licensing: [docs/songs-sources.md](docs/songs-sources.md)
 - Fingering rules (Parncutt et al. 1997 model): [docs/references/parncutt-1997-fingering-model.md](docs/references/parncutt-1997-fingering-model.md)
 
+## Hosting on GitHub Pages
+
+The app is published at `https://nix117d.github.io/piano-stars/`. To publish a new version, run:
+
+```bash
+npm run deploy
+```
+
+This builds the app with the `/piano-stars/` base path and pushes the result to the repository's `gh-pages` branch, which GitHub Pages serves. The tablet's installed app picks up the new version the next time it starts with internet.
+
 ## Install it on the tablet (once hosted)
 
 Open the hosted address in Chrome on the tablet, wait for the page to load once, then use the Chrome menu and choose "Add to Home screen" (or "Install app"). After that it starts from the home screen, fullscreen and landscape, and works without internet.
