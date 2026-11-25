@@ -26,3 +26,22 @@ test('a hand move starts a new position, even onto an unused finger', () => {
   // E(3) to B(4) rises 7 semitones, past 3-4's MaxPrac of 4: the hand has to lift.
   expect(handPositions(seq('C(1) D(2) E(3) B(4)')).map(x => x.startIndex)).toEqual([0, 3]);
 });
+test('a key played with a different finger starts a new position', () => {
+  // D is played with 3, then with 2: two fingers can't share one key in a position.
+  const p = handPositions(seq('A3(1) D(3) E(4) _ A3(1) D(2) E(3)'));
+  expect(p.map(x => x.startIndex)).toEqual([0, 5]);
+  for (const x of p) {
+    const keys = Object.values(x.fingerKeys);
+    expect(new Set(keys).size).toBe(keys.length);
+  }
+});
+test('no built-in position puts two fingers on one key (Bella Ciao did)', async () => {
+  const { BUILTIN_SONGS } = await import('../../src/songs/builtin/index');
+  for (const b of BUILTIN_SONGS) {
+    const r = parseTypedNotes(b.typed); if (!r.ok) throw new Error(b.id);
+    for (const x of handPositions(assignFingering(r.notes))) {
+      const keys = Object.values(x.fingerKeys);
+      expect(new Set(keys).size, `${b.id} @${x.startIndex}`).toBe(keys.length);
+    }
+  }
+});

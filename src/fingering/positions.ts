@@ -20,8 +20,9 @@ function whiteKey(index: number): number {
 
 /**
  * Splits fingered notes into five-finger positions. A new position starts at a note reached by a
- * hand move (as `assignFingering` defines it), or at the first note that would make one finger
- * play two different keys. Rests and unfingered notes don't split positions.
+ * hand move (as `assignFingering` defines it), at the first note that would make one finger
+ * play two different keys, or at a key played again with a different finger (two fingers can't
+ * share one key). Rests and unfingered notes don't split positions.
  */
 export function handPositions(notes: Note[]): HandPosition[] {
   const positions: HandPosition[] = [];
@@ -30,9 +31,11 @@ export function handPositions(notes: Note[]): HandPosition[] {
   notes.forEach((n, index) => {
     if (n.midi === null || n.finger === undefined) return;
     const held = current?.fingerKeys[n.finger];
+    const keyTaken = current !== null
+      && FINGERS.some(f => f !== n.finger && current!.fingerKeys[f] === n.midi);
     const moved = last !== null && isHandMove(last.finger, n.finger, last.midi, n.midi);
     last = { finger: n.finger, midi: n.midi };
-    if (!current || moved || (held !== undefined && held !== n.midi)) {
+    if (!current || moved || keyTaken || (held !== undefined && held !== n.midi)) {
       current = { startIndex: index, fingerKeys: {} };
       positions.push(current);
     }
