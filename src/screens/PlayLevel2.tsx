@@ -52,12 +52,11 @@ export function PlayLevel2({ song, startTime, speed, metronome, source, lang, pa
     setFeedback(f => ({ kind, size, midi, id: (f?.id ?? 0) + 1 }));
 
   // The session follows `paused` here (not in an effect, which could run a frame late), so what the loop
-  // and the presses see always agrees with it. A resume moves the beats, so the beat counter restarts from there.
+  // and the presses see always agrees with it.
   const syncPause = (now: number) => {
     if (pausedRef.current === session.paused) return;
     if (pausedRef.current) { session.pause(now); return; }
     session.resume(now);
-    lastBeat.current = Math.max(-1, Math.floor((now - session.startTime) / session.beatMs));
   };
 
   // One loop for the beat (dots and click), the misses and the end. The drawing of the bubbles is in FallingLane.

@@ -82,8 +82,10 @@ test('level 2: after a reconnect the beat continues without a stray click', asyn
   act(() => fake.setConnected(false));
   advance(10000);
   expect(click).toHaveBeenCalledTimes(3);
-  act(() => fake.setConnected(true));
-  advance(300); // the pause moved beat 3 from 3000 ms to 13000 ms
+  // Not inside act(): its synchronous effect flush would hide a session that resumes a frame late.
+  fake.setConnected(true);
+  for (let i = 0; i < 5; i++) await Promise.resolve();
+  vi.advanceTimersByTime(300); // the pause moved beat 3 from 3000 ms to 13000 ms
   expect(click).toHaveBeenCalledTimes(3);
   expect(screen.getByTestId('count-in').querySelectorAll('[data-filled]')).toHaveLength(3);
   advance(600); // 13000 ms after the start
