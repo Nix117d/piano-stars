@@ -61,10 +61,15 @@ export function PlayLevel1({ song, session, source, lang, paused, tapMode, onDon
   }, [moving, currentPos]);
 
   const finishTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
-  useEffect(() => () => clearTimeout(finishTimer.current), []);
+  useEffect(() => {
+    // A one-note song is already finished by the press on the hand screen.
+    if (session.isDone()) finishTimer.current = setTimeout(onDone, FINISH_MS);
+    return () => clearTimeout(finishTimer.current);
+  }, []);
 
   const handle = (midi: number) => {
-    if (paused || session.isDone()) return;
+    // Presses while the hand moves to a new position don't count: no mistake, no wobble.
+    if (paused || moving || session.isDone()) return;
     const result = session.press(midi);
     if (result === 'ignored') return;
     setFeedback(f => ({ kind: result === 'correct' ? 'sparkle' : 'wobble', midi, id: (f?.id ?? 0) + 1 }));

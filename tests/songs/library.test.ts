@@ -49,3 +49,11 @@ test('freePicture avoids used pictures', () => { expect(freePicture(PICTURES.sli
 test('freePicture picks the least used picture once all are taken', () => {
   expect(freePicture([...PICTURES, ...PICTURES.filter(p => p !== PICTURES[7])])).toBe(PICTURES[7]);
 });
+
+test('built-ins still load when the saved songs cannot be read', async () => {
+  const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+  globalThis.indexedDB = { open() { throw new Error('blocked'); } } as unknown as IDBFactory;
+  expect((await loadLibrary(DEFAULT_SETTINGS)).map(s => s.id)).toEqual(['cde']);
+  expect(warn).toHaveBeenCalled();
+  warn.mockRestore();
+});

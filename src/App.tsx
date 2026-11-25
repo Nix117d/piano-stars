@@ -15,6 +15,8 @@ import { loadBests, loadLibrary, type Bests } from './songs/library';
 import { DEFAULT_SETTINGS, getSettings, recordResult, type Level, type Settings } from './store/db';
 import './screens/screens.css';
 
+type StartResult = Awaited<ReturnType<MidiInput['start']>>;
+
 export type Route =
   | { screen: 'picker' }
   | { screen: 'hand'; song: Song; session: Level1Session }
@@ -53,7 +55,9 @@ export function App({ source: given }: { source?: NoteSource }) {
   // No status has said "connected" yet, so there is no keyboard.
   const [connected, setConnected] = useState(false);
   const [tapMode, setTapMode] = useState(false);
-  const started = useRef(false);
+  // What starting the keyboard input gave ('ok', 'unsupported', 'denied'); the parent area shows it.
+  const [startResult, setStartResult] = useState<StartResult>();
+  const starting = useRef(false);
 
   useEffect(() => source.onStatus(s => {
     setConnected(s.connected);
@@ -61,10 +65,16 @@ export function App({ source: given }: { source?: NoteSource }) {
   }), [source]);
 
   const reload = async () => {
-    const s = await getSettings().catch(() => DEFAULT_SETTINGS);
-    const lib = await loadLibrary(s).catch(() => [] as Song[]);
+    const s = await getSettings().catch((e: unknown) => {
+      console.warn('Could not read the settings', e);
+      return DEFAULT_SETTINGS;
+    });
+    const lib = await loadLibrary(s);
     setSongs(lib);
-    setBests(await loadBests(lib).catch(() => ({})));
+    setBests(await loadBests(lib).catch((e: unknown) => {
+      console.warn('Could not read the best results', e);
+      return {};
+    }));
     setSettings(s);
   };
   useEffect(() => { void reload(); }, []);
@@ -78,12 +88,19 @@ export function App({ source: given }: { source?: NoteSource }) {
     if (session.current()) setRoute({ screen: 'hand', song, session });
   };
 
+  // Asking for MIDI on a tap lets Chrome show its permission prompt. Until it gives 'ok', the next tap tries again.
+  const startSource = () => {
+    const startable = source as Partial<{ start(): StartResult | Promise<StartResult> | void }>;
+    if (!startable.start || starting.current || startResult === 'ok') return;
+    starting.current = true;
+    Promise.resolve(startable.start())
+      .then(r => setStartResult(r ?? 'ok'))
+      .catch((e: unknown) => console.warn('Could not start the keyboard input', e))
+      .finally(() => { starting.current = false; });
+  };
+
   const pick = (song: Song, level: Level) => {
-    // Asking for MIDI on a tap lets Chrome show its permission prompt.
-    if (!started.current) {
-      started.current = true;
-      void (source as Partial<{ start(): unknown }>).start?.();
-    }
+    startSource();
     if (level === 1) startLevel1(song);
     else setRoute({ screen: 'play2', song });
   };
@@ -92,7 +109,7 @@ export function App({ source: given }: { source?: NoteSource }) {
     setRoute({ screen: 'results', song, level, stars });
     recordResult(song.id, level, stars)
       .then(({ best }) => setBests(b => ({ ...b, [song.id]: { ...(b[song.id] ?? { 1: 0, 2: 0 }), [level]: best } })))
-      .catch(() => {});
+      .catch((e: unknown) => console.warn('Could not save the result', e));
   };
 
   const needsKeys = route.screen === 'hand' || route.screen === 'play1' || route.screen === 'play2';

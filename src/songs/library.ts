@@ -28,7 +28,12 @@ export async function loadLibrary(settings: Settings): Promise<Song[]> {
   const builtins = BUILTIN_SONGS
     .filter(b => !settings.hiddenBuiltins.includes(b.id))
     .flatMap(b => builtinSong(b) ?? []);
-  const user = (await listUserSongs())
+  // If IndexedDB is unavailable the built-ins must still load.
+  const stored = await listUserSongs().catch((e: unknown) => {
+    console.warn('Could not read the saved songs', e);
+    return [] as Song[];
+  });
+  const user = stored
     .filter(s => !s.hidden)
     .sort((a, b) => a.createdAt - b.createdAt);
   return [...builtins, ...user];
