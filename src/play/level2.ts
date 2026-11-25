@@ -68,10 +68,20 @@ export class Level2Session {
     return this.all.filter((_, i) => !this.judged.has(i));
   }
 
+  /**
+   * Judges a press against the unjudged target of that pitch closest in time (the earlier one on a
+   * tie), within the close window. On a repeated note this keeps an early press of the second
+   * note from taking the first, which was missed.
+   */
   press(midi: number, time: number): PressResult {
     if (this.pausedAt !== null) return { kind: 'ignored' };
     {
-      const i = this.all.findIndex((t, k) => !this.judged.has(k) && t.midi === midi && Math.abs(time - t.time) <= CLOSE_MS);
+      let i = -1;
+      this.all.forEach((t, k) => {
+        const off = Math.abs(time - t.time);
+        if (this.judged.has(k) || t.midi !== midi || off > CLOSE_MS) return;
+        if (i < 0 || off < Math.abs(time - this.all[i].time)) i = k;
+      });
       if (i >= 0) {
         this.judged.add(i);
         const onTime = Math.abs(time - this.all[i].time) <= ON_TIME_MS;

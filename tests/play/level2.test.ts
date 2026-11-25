@@ -31,7 +31,14 @@ describe('level 2', () => {
     expect(s.press(60, 4000)).toEqual({ kind: 'onTime', index: 0 });
     expect(s.press(60, 4010)).toEqual({ kind: 'wrong' });
   });
-  test('a press takes the earliest unjudged target of the same pitch', () => {
+  test('a repeated note: a press takes the unjudged target closest in time', () => {
+    const s = new Level2Session(scheduleNotes(seq('tempo 240\nC C'), 240, 'normal', 0)); // targets at 1000 and 1250
+    // Missed the first C, played the second a little early: that is the second C, on time.
+    expect(s.press(60, 1200)).toEqual({ kind: 'onTime', index: 1 });
+    expect(s.tick(1301)).toEqual([0]);
+    expect(s.result()).toMatchObject({ onTime: 1, close: 0, missed: 1 });
+  });
+  test('a press takes the first unjudged target of the same pitch when it is the closest', () => {
     const s = new Level2Session(scheduleNotes(seq('tempo 240\nC C'), 240, 'normal', 0)); // beatMs 250: targets at 1000 and 1250
     expect(s.press(60, 1100)).toEqual({ kind: 'onTime', index: 0 });
     expect(s.press(60, 1100)).toEqual({ kind: 'onTime', index: 1 });
