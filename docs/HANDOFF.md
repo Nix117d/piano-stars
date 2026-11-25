@@ -1,92 +1,79 @@
-# Piano Stars: handoff (end of 2026-11-25)
+# Piano Stars: handoff
+
+**v1 is finished (2026-11-25).** It is live, installed on the tablet, and checked offline with the Yamaha keyboard. This note is the starting point for any later session.
 
 ## Where things stand
 
-- **The app is built.** All 17 tasks in the plan are done, and each one was reviewed. A final review of the whole app found 5 more problems, which are fixed and re-checked.
-- **Tests:** 223 automated tests pass. Type check and production build are clean.
-- **Code location:** the work is on the branch `build/v1`, 42 commits, head `75a17e3`. It is **not merged into `main`**, which still holds only the design and plan docs.
-- **Docs to start from:**
-  - [README.md](../README.md) starts with a quick start for parents.
-  - [Design (spec)](superpowers/specs/2026-11-24-piano-stars-design.md)
-  - [Implementation plan](superpowers/plans/2026-11-24-piano-stars.md)
-  - [Song sources](songs-sources.md)
-  - [Fingering model reference](references/parncutt-1997-fingering-model.md)
-- **Build log:** `.superpowers/sdd/2026-11-24-piano-stars/progress.md` records every decision, review and deferred item. It is git-ignored, so keep this folder until the branch is finished.
+- **Live app:** https://nix117d.github.io/piano-stars/ (GitHub Pages, from the `gh-pages` branch). It is installed on the tablet's home screen, and was checked there offline with the keyboard on 2026-11-25.
+- **Code:** https://github.com/Nix117d/piano-stars (public). `main` holds v1. `build/v1` is the same commit and can be deleted. Commits use the GitHub no-reply address.
+- **Health:** 225 automated tests pass (`npm test`). `npx tsc --noEmit` is clean and `npm run build` succeeds.
+- **How it was built:**
+  - design: [spec](superpowers/specs/2026-11-24-piano-stars-design.md)
+  - [17-task plan](superpowers/plans/2026-11-24-piano-stars.md), carried out task by task, each task with its own review
+  - a final whole-app review, whose findings were fixed and re-checked
 
-### What works
+## What v1 does
 
-- **Songs:** six built-in songs (see the list in step 2), songs typed by the parent, and MusicXML/MXL/MIDI import.
-- **Level 1:** the next key glows in the correct octave, with a finger number and a hand picture. The app waits for the right key, ignores presses while the hand picture is moving, and makes no sound while the keyboard is connected.
-- **Level 2 (rhythm):** off by default. It has a count-in, falling notes, timing scores and an optional metronome. It pauses when the keyboard is unplugged or the app is hidden.
-- **Rewards:** 1–5 stars and a medal wall.
-- **Languages:** the child's screens are in Dutch and the parent area in English, each switchable separately.
-- **Parent area (hold the top-left button for 3 seconds):**
-  - songs: preview, edit, hide, picture, speed, reset to original;
-  - import review;
-  - the "press middle C" keyboard check;
-  - settings;
-  - "Save for keyboard" (exports a file for the PSR-E373's own Waiting lesson).
-- **Screen:** stays on while playing.
-- **Offline:** it installs as an offline app. Hosting is still to do.
+- **For the child (Dutch by default):**
+  - picks a song from big picture cards;
+  - a "put your hand here" screen shows where his hand goes;
+  - the next key glows in the correct octave, with the right-hand finger number and a hand picture;
+  - Level 1 waits for each key, with no sound and no penalty while the hand picture moves;
+  - Level 2 (rhythm, off by default) has a count-in, falling notes, timing scores and an optional metronome;
+  - 1–5 stars and a medal wall;
+  - unplugging the keyboard pauses the song, and the screen stays on while he plays.
+- **Fingering:** right-hand five-finger positions (at most 6 white keys wide), worked out with the Parncutt et al. (1997) model plus beginner rules. See [the reference](references/parncutt-1997-fingering-model.md).
+- **Songs:**
+  - six built-in public-domain songs: the [sources](songs-sources.md) record exactly where each melody comes from;
+  - MusicXML/MXL/MIDI import with a "here's what I read" review;
+  - typed notes (see the README for the syntax).
+- **For the parent (English by default; hold the top-left button for 3 seconds):**
+  - songs: preview, edit (built-ins can be edited and reset to the original), hide, picture, Level 2 speed;
+  - Settings: Level 2, metronome, celebration sound, both languages;
+  - a "press middle C" keyboard check that warns if the keyboard's Transpose isn't 00;
+  - "Save for keyboard", which exports a song for the PSR-E373's own Waiting lesson.
+- **Offline:** an installable app that works without internet after the first visit. Nothing is sent anywhere.
 
-## What needs you, in order
+## Working on it next time
 
-### 1. Try it on the tablet and listen to the built-in songs (about 20 min)
+- **Set up:** in `piano-stars/`, run `npm install`.
+- **Run it:**
+  - `npm run dev` starts it on the Mac;
+  - `http://localhost:5173/?fake` lets you play with the computer keys `a s d f g h j k`.
+- **Test:** `npm test`.
+- **Try it on the tablet against the Mac:**
+  - Option 1: Chrome flag "Insecure origins treated as secure" with `http://<mac-ip>:5173`. Switch it off again afterwards.
+  - Option 2: adb wireless debugging with `adb reverse tcp:5173 tcp:5173`.
+  - `/midi-test.html` (dev only) shows the raw notes coming from the keyboard.
+- **Publish a new version:** `npm run deploy`. It builds with the `/piano-stars/` base path and pushes to `gh-pages`. The tablet updates the next time the app opens with internet.
+- **Keyboard tips (PSR-E373):**
+  - Storage Mode (Function 056) OFF while playing.
+  - Transpose 00.
+  - Yamaha calls middle C "C3"; the app calls it C4.
+- **Songs are stored per web address on the tablet.** Songs added on the Mac test address don't appear in the installed app (see the backlog).
+- **Process used for v1:** design → plan → one task at a time, each followed by a review → a final whole-app review. Keep the rule that built-in melodies come only from printed public-domain sources, never from memory, and never store lyrics.
 
-- On the Mac, start the dev server (`npm run dev` in `piano-stars/`, or ask Claude to start it).
-- On the tablet, open `http://<mac-ip>:5173`. (System Settings → Network shows the Mac's address.)
-- The Chrome flag you set yesterday ("Insecure origins treated as secure") must list the current address.
-- Open the parent area (hold the faint top-left button for 3 seconds). Press **Preview** on each built-in song and check that it sounds right:
-  - Zie, ginds komt de stoomboot
-  - Sinterklaas kapoentje
-  - O, kom er eens kijken: listen carefully to the second half. The 1898 scan had two unclear spots, bars 12–13.
-  - Sinterklaasje, bonne, bonne, bonne
-  - Bella Ciao: it dips below middle C, to the A.
-  - Für Elise: now the whole first part (bars 1-22 with the first repeat, right hand, 128 notes). Listen carefully at bar 13, the big jump up to the high E (E6).
-- Also check on the tablet:
-  - the screen stays on during a song;
-  - the hand picture is big enough;
-  - Level 2 timing feels fair at "slow" speed;
-  - picking a `.mxl` or `.mid` file works.
+## What's next
 
-### 2. Decide about the three Sinterklaas songs that are missing
+Everything open is in [BACKLOG.md](BACKLOG.md):
 
-- "Hoor wie klopt daar, kind'ren", "De zak van Sinterklaas" and "Dag, Sinterklaasje" were left out. No public-domain sheet music could be found online.
-- If you have a songbook or a sheet-music file, add them in the parent area, either from the file or by typing the notes.
-- Pietengym, Tamo daleko, the Pink Panther theme and Crni leptir are still under copyright. Add them the same way, from files you're allowed to use.
+- **Parked by the parent:** test "Save for keyboard" on the Yamaha.
+- **Most useful next:**
+  - save and load your own songs as a file;
+  - only accept notes from the keyboard's channel 1;
+  - stop the Android back gesture from leaving a song mid-way.
+- **Songs:** the three missing Sinterklaas songs ("Hoor wie klopt daar, kind'ren", "De zak van Sinterklaas", "Dag, Sinterklaasje"), added once a free-to-use printed source or the family's own songbook is available. The next section of Für Elise could come later, too.
+- **Ideas from the original design, left out of v1:** reading a photo of paper sheet music, iPad support, left hand or two hands, microphone input for an acoustic piano.
 
-### 3. Test "Save for keyboard" on the Yamaha
+## Decisions made during v1
 
-- In the parent area, press **Save for keyboard** on one song and follow the 4 steps the app shows:
-  1. Copy the file to a computer.
-  2. Connect the keyboard to the computer.
-  3. Turn Storage Mode (Function 056) on and copy the file onto the keyboard.
-  4. Turn Storage Mode off, choose the song with [SONG], and press LESSON until "WAITING" shows.
-- Expected: the keyboard shows the notes and waits for each correct key.
-
-### 4. Choose where to host it once, so the tablet can install it
-
-- The app has to be opened over HTTPS once to install. After that it runs offline from the home screen.
-- Options: GitHub Pages (needs a GitHub account and a public repository), Netlify or Cloudflare Pages. All are free for this.
-- The app contains no personal data.
-- When you choose, Claude sets the base path, fixes the icon links for that host, and publishes it. Nothing is published without your yes.
-
-### 5. Final check, then finish the branch
-
-- On the tablet: open the hosted address in Chrome and use Add to Home screen.
-- Turn Wi-Fi off and open it from the home screen with the keyboard plugged in.
-- Play a song in both levels, and unplug and replug the keyboard mid-song.
-- Then merge `build/v1` into `main`.
-
-## Decisions Claude made on your behalf
-
-Each line is a call Claude made during the build, and what it costs if it's wrong. Tell Claude about any you'd like changed.
+Each line is a call made during the build, and what it costs if it turns out wrong.
 
 - **A.** Skipped "git init", because the repository already existed. *Cost: none.*
 - **B.** The MIDI test page is served only in development, not in the installed app. *Cost: none.*
 - **C.** Preview in the parent area makes sound even when the keyboard is connected. The "no sound" rule applies to the child's screens. *Cost: none.*
-- **D.** Steps that need you (tablet, listening, keyboard export, hosting) are paused and left for you. *Cost: waiting time.*
-- **E.** Added a "press middle C" check in the parent area. It warns when the keyboard's Transpose isn't 00, after yesterday's +6 surprise. *Cost: one small screen.*
+- **D.** Steps that needed the parent (tablet, listening, keyboard export, hosting) were paused for them; all done except the keyboard export test, now in the backlog. *Cost: waiting time.*
+- **E.** Added a "press middle C" check in the parent area. It warns when the keyboard's Transpose isn't 00, after the keyboard turned out to be set to Transpose +6 during the first hardware test. *Cost: one small screen.*
 - **F.** The app calls middle C "C4" (the international name). Yamaha calls it "C3", and the README says so. *Cost: octave labels would need renaming.*
 - **G.** A song outside the keyboard's range is shifted by whole octaves, never squeezed. *Cost: rare imports may still go above the top key.*
 - **H.** Typed notes accept exact lengths such as `E:1.5`, needed for the dotted rhythms in the Sinterklaas songs. *Cost: one extra notation.*
@@ -110,7 +97,7 @@ Each line is a call Claude made during the build, and what it costs if it's wron
 - **X.** Built-in songs can be edited. The edit is saved as a copy with "Reset to original". *Cost: if a future version removed a song you had edited, the copy couldn't be deleted. It's a small fix if that ever happens.*
 - **Y.** The screen stays on while playing, and Level 2 pauses while the app is hidden. *Cost: battery use during play.*
 - **Z.** A hand position may span at most 6 white keys. Für Elise covers its whole opening section (bars 1–22, right hand, A minor). *Cost: a few more hand moves in some songs; Für Elise needs about one hand move per bar, so it is the hardest built-in.*
-- **AA.** Smaller fixes before handing it to your son:
+- **AA.** Smaller fixes before handing it to the child:
   - parent quick start in the README;
   - finger numbers readable on every key colour;
   - unique export file names;
@@ -120,11 +107,3 @@ Each line is a call Claude made during the build, and what it costs if it's wron
   - repeated notes in Level 2 matched to the nearest beat.
   *Cost: none.*
 
-## Small things left for later (not blocking)
-
-These are listed in the build log. The ones worth doing eventually:
-
-- Accept notes only from the keyboard's channel 1, so a demo song playing on the keyboard isn't counted as presses.
-- Stop the Android back gesture from leaving a song mid-way.
-- Guard against a malformed MusicXML file with `divisions` = 0, which would give a Level 2 song that never ends.
-- English-only labels for screen readers, plus a few extra tests.

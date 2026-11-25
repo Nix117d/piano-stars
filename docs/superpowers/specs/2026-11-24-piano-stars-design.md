@@ -1,7 +1,7 @@
 # Piano Stars: design
 
 Date: 2026-11-24
-Status: approved 2026-11-24
+Status: approved 2026-11-24; implemented as v1 on 2026-11-25. Decisions that refine this design are listed in docs/HANDOFF.md ("Decisions made during v1").
 
 ## Intent and why
 
