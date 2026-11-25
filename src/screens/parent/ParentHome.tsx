@@ -9,7 +9,7 @@ import type { Song } from '../../song/types';
 import { loadLibrary } from '../../songs/library';
 import { freePicture } from '../../songs/pictures';
 import {
-  deleteSong, getSettings, resetMedals, saveSettings, saveSong, type Settings, type Speed,
+  DEFAULT_SETTINGS, deleteSong, getSettings, resetMedals, saveSettings, saveSong, type Settings, type Speed,
 } from '../../store/db';
 import { ConfirmDialog } from './ConfirmDialog';
 import { ImportReview } from './ImportReview';
@@ -53,18 +53,26 @@ export function ParentHome({ source, status, startResult, onStartKeyboard, onSet
   const [pictureFor, setPictureFor] = useState<Song>();
   const fileInput = useRef<HTMLInputElement>(null);
 
+  const [failed, setFailed] = useState(false);
+  const fail = (e: unknown) => { console.warn('Storage problem in the parent area', e); setFailed(true); };
+
   const refresh = async () => {
-    const s = await getSettings();
-    setSongs(await loadLibrary(s, true));
-    setSettings(s);
+    try {
+      const s = await getSettings();
+      setSongs(await loadLibrary(s, true));
+      setSettings(s);
+    } catch (e) {
+      fail(e);
+      setSettings(s => s ?? DEFAULT_SETTINGS);
+    }
   };
   useEffect(() => { void refresh(); }, []);
   if (!settings) return null;
   const lang = settings.parentLang;
   const newPicture = () => freePicture(songs.map(s => s.picture));
-  const done = () => { setView({ kind: 'home' }); return refresh(); };
+  const done = () => { setFailed(false); setView({ kind: 'home' }); return refresh(); };
   const changeSettings = (patch: Partial<Settings>) =>
-    saveSettings({ ...settings, ...patch }).then(refresh);
+    saveSettings({ ...settings, ...patch }).then(refresh).catch(fail);
 
   const pickFile = async (e: Event) => {
     const input = e.currentTarget as HTMLInputElement;
@@ -76,7 +84,7 @@ export function ParentHome({ source, status, startResult, onStartKeyboard, onSet
   const setPicture = (song: Song, picture: string) => {
     setPictureFor(undefined);
     if (song.source === 'builtin') void changeSettings({ pictureOverrides: { ...settings.pictureOverrides, [song.id]: picture } });
-    else void saveSong({ ...song, picture }).then(refresh);
+    else void saveSong({ ...song, picture }).then(refresh).catch(fail);
   };
 
   const toggleHidden = (song: Song) => changeSettings({
@@ -88,31 +96,33 @@ export function ParentHome({ source, status, startResult, onStartKeyboard, onSet
   const editSong = (song: Song) => {
     const text = serializeTypedNotes(song.tempo, song.notes);
     setView({
-      kind: 'editor', editing: true, draft: { title: song.title, text, picture: song.picture },
+      kind: 'editor', editing: true, draft: { title: song.title, text, picture: song.picture, original: song },
       finish: s => ({ ...s, id: song.id, createdAt: song.createdAt, source: song.source, hidden: song.hidden }),
     });
   };
 
+  const banner = failed && <p class="error-box parent-error" role="alert" data-testid="storage-error">{t(lang, 'parent.error')}</p>;
   if (view.kind === 'review') {
     return (
-      <ImportReview lang={lang} result={view.result} fileName={view.fileName} picture={view.picture}
+      <>{banner}<ImportReview lang={lang} result={view.result} fileName={view.fileName} picture={view.picture}
         onCancel={() => setView({ kind: 'home' })}
-        onSave={song => void saveSong(song).then(done)}
-        onFix={draft => setView({ kind: 'editor', draft, editing: false, finish: s => ({ ...s, source: 'file' }) })} />
+        onSave={song => void saveSong(song).then(done).catch(fail)}
+        onFix={draft => setView({ kind: 'editor', draft, editing: false, finish: s => ({ ...s, source: 'file' }) })} /></>
     );
   }
   if (view.kind === 'editor') {
     return (
-      <SongEditor lang={lang} draft={view.draft} editing={view.editing}
+      <>{banner}<SongEditor lang={lang} draft={view.draft} editing={view.editing}
         onCancel={() => setView({ kind: 'home' })}
-        onSave={song => void saveSong(view.finish(song)).then(done)} />
+        onSave={song => void saveSong(view.finish(song)).then(done).catch(fail)} /></>
     );
   }
 
   return (
     <div class="screen parent-screen" data-testid="parent-home">
+      {banner}
       <header class="top-bar">
-        <button type="button" class="round-button" aria-label="Back" onClick={onBack}>{'⬅️'}</button>
+        <button type="button" class="round-button" aria-label={t(lang, 'parent.back')} onClick={onBack}>{'⬅️'}</button>
         <h1 class="screen-title">{'⚙️'} {t(lang, 'parent.title')}</h1>
         <span class="round-spacer" />
       </header>
@@ -125,7 +135,7 @@ export function ParentHome({ source, status, startResult, onStartKeyboard, onSet
         </button>
         <button type="button" class="parent-button" onClick={onSettings}>{t(lang, 'parent.settings')}</button>
         <button type="button" class="parent-button danger"
-          onClick={() => setAsk({ message: t(lang, 'confirm.resetMedals'), onYes: () => void resetMedals() })}>
+          onClick={() => setAsk({ message: t(lang, 'confirm.resetMedals'), onYes: () => void resetMedals().catch(fail) })}>
           {t(lang, 'parent.resetMedals')}
         </button>
       </div>
@@ -135,7 +145,7 @@ export function ParentHome({ source, status, startResult, onStartKeyboard, onSet
             <SongRow key={song.id} song={song} lang={lang} speed={settings.speeds[song.id] ?? 'slow'}
               onEdit={() => editSong(song)} onPicture={() => setPictureFor(song)}
               onToggleHidden={() => void toggleHidden(song)}
-              onDelete={() => setAsk({ message: t(lang, 'confirm.delete', { title: song.title }), onYes: () => void deleteSong(song.id).then(refresh) })}
+              onDelete={() => setAsk({ message: t(lang, 'confirm.delete', { title: song.title }), onYes: () => void deleteSong(song.id).then(refresh).catch(fail) })}
               onSpeed={(s: Speed) => void changeSettings({ speeds: { ...settings.speeds, [song.id]: s } })} />
           ))}
         </ul>

@@ -65,6 +65,10 @@ export const en = {
   'err.badTempo': '"{token}": tempo must be 20 to 300.',
   'err.outOfRange': '"{token}" is off the keyboard.',
   'picture.title': 'Pick a picture',
+  'parent.back': 'Back',
+  'song.untitled': 'Song',
+  'parent.error': 'Something went wrong saving. Try again.',
+  'editor.empty': 'Add at least one note.',
 } as const;
 
 export type TKey = keyof typeof en;

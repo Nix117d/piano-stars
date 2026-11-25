@@ -1,13 +1,19 @@
-import { useState } from 'preact/hooks';
+import { useEffect, useState } from 'preact/hooks';
 import { t } from '../../i18n';
 import { parseTypedNotes, type TypedError } from '../../song/typed-notes';
 import type { Song } from '../../song/types';
 import type { Lang } from '../../store/db';
 import { PicturePicker } from './PicturePicker';
-import { playPreview } from './preview';
+import { playPreview, stopPreview } from './preview';
 import { songFromTyped } from './song-factory';
 
-export interface EditorDraft { title: string; text: string; picture: string }
+export interface EditorDraft {
+  title: string;
+  text: string;
+  picture: string;
+  /** The saved song being changed, so its fingering source is kept when no finger was changed. */
+  original?: Song;
+}
 
 export interface SongEditorProps {
   lang: Lang;
@@ -37,9 +43,11 @@ export function SongEditor({ lang, draft, editing, onSave, onCancel }: SongEdito
   const [picture, setPicture] = useState(draft.picture);
   const parsed = parseTypedNotes(text);
   const errors = parsed.ok ? [] : parsed.errors;
+  const empty = parsed.ok && !parsed.notes.some(n => n.midi !== null);
+  useEffect(() => stopPreview, []);
 
   const save = () => {
-    const song = songFromTyped(title, text, picture);
+    const song = songFromTyped(title, text, picture, t(lang, 'song.untitled'), draft.original);
     if (!Array.isArray(song)) onSave(song);
   };
 
@@ -65,13 +73,14 @@ export function SongEditor({ lang, draft, editing, onSave, onCancel }: SongEdito
             <ul>{errors.map(e => <li key={e.start}>{t(lang, `err.${e.code}`, { token: e.token })}</li>)}</ul>
           </div>
         )}
+        {empty && <p class="error-box" data-testid="editor-empty">{t(lang, 'editor.empty')}</p>}
         <PicturePicker lang={lang} value={picture} onPick={setPicture} />
       </div>
       <footer class="parent-actions">
         <button type="button" class="parent-button" disabled={!parsed.ok}
           onClick={() => parsed.ok && playPreview(parsed.tempo, parsed.notes)}>{'🔊'} {t(lang, 'song.preview')}</button>
         <button type="button" class="parent-button" onClick={onCancel}>{t(lang, 'song.cancel')}</button>
-        <button type="button" class="parent-button primary" disabled={errors.length > 0} onClick={save}>{t(lang, 'song.save')}</button>
+        <button type="button" class="parent-button primary" disabled={errors.length > 0 || empty} onClick={save}>{t(lang, 'song.save')}</button>
       </footer>
     </div>
   );

@@ -67,4 +67,8 @@ export const nl: Record<TKey, string> = {
   'err.badTempo': '"{token}": tempo moet 20 tot 300 zijn.',
   'err.outOfRange': '"{token}" ligt buiten het keyboard.',
   'picture.title': 'Kies een plaatje',
+  'parent.back': 'Terug',
+  'song.untitled': 'Liedje',
+  'parent.error': 'Er ging iets mis bij het bewaren. Probeer opnieuw.',
+  'editor.empty': 'Voeg minstens één noot toe.',
 };

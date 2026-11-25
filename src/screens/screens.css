@@ -124,3 +124,4 @@ button { font-family: inherit; color: inherit; cursor: pointer; touch-action: ma
 .dialog.wide { max-width: 760px; }
 .dialog-text { margin: 0; font-size: 24px; font-weight: 700; }
 .dialog-buttons { display: flex; gap: 12px; justify-content: flex-end; }
+.parent-error { position: absolute; top: 8px; left: 50%; translate: -50% 0; z-index: 30; margin: 0; }

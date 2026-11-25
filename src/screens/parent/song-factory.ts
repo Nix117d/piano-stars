@@ -8,12 +8,12 @@ function newId(): string {
 }
 
 /** The file name without its extension, used as the title when the file has none. */
-const nameFromFile = (fileName: string) => fileName.replace(/\.[^.]*$/, '').trim() || 'Song';
+const nameFromFile = (fileName: string, fallback: string) => fileName.replace(/\.[^.]*$/, '').trim() || fallback;
 
-export function songFromImport(r: ImportResult & { ok: true }, fileName: string, picture: string): Song {
+export function songFromImport(r: ImportResult & { ok: true }, fileName: string, picture: string, fallbackTitle = 'Song'): Song {
   return {
     id: newId(),
-    title: r.title?.trim() || nameFromFile(fileName),
+    title: r.title?.trim() || nameFromFile(fileName, fallbackTitle),
     source: 'file',
     tempo: r.tempo,
     notes: assignFingering(r.notes),
@@ -24,17 +24,27 @@ export function songFromImport(r: ImportResult & { ok: true }, fileName: string,
   };
 }
 
-/** A song from typed text; any finger the parent typed makes the fingering 'parent', the rest are filled in. */
-export function songFromTyped(title: string, text: string, picture: string): Song | TypedError[] {
+/**
+ * A song from typed text. For a new song, any typed finger makes the fingering 'parent'.
+ * When `original` is given (editing), a finger only counts as typed if it differs from the original
+ * finger at that place and from what the rules would give; otherwise the original source is kept,
+ * and for a 'rules' song the fingers are worked out again for the edited notes.
+ */
+export function songFromTyped(title: string, text: string, picture: string, fallbackTitle = 'Song', original?: Song): Song | TypedError[] {
   const parsed = parseTypedNotes(text);
   if (!parsed.ok) return parsed.errors;
+  const auto = assignFingering(parsed.notes.map(({ finger: _f, ...n }) => n));
+  const typed = parsed.notes.some((n, i) => n.finger !== undefined
+    && (!original || (n.finger !== original.notes[i]?.finger && n.finger !== auto[i].finger)));
+  const source = typed || !original ? (typed || parsed.notes.some(n => n.finger !== undefined) ? 'parent' : 'rules') : original.fingeringSource;
+  const notes = source === 'rules' ? auto : assignFingering(parsed.notes);
   return {
     id: newId(),
-    title: title.trim() || 'Song',
+    title: title.trim() || fallbackTitle,
     source: 'typed',
     tempo: parsed.tempo,
-    notes: assignFingering(parsed.notes),
-    fingeringSource: parsed.notes.some(n => n.finger !== undefined) ? 'parent' : 'rules',
+    notes,
+    fingeringSource: source,
     picture,
     hidden: false,
     createdAt: Date.now(),

@@ -17,6 +17,7 @@ import { songFromImport, songFromTyped } from '../../src/screens/parent/song-fac
 import { loadLibrary } from '../../src/songs/library';
 import { DEFAULT_SETTINGS, getBest, getSettings, listUserSongs, recordResult, saveSong } from '../../src/store/db';
 import type { Song } from '../../src/song/types';
+import { serializeTypedNotes } from '../../src/song/typed-notes';
 
 beforeEach(() => { globalThis.indexedDB = new IDBFactory(); });
 afterEach(() => { vi.useRealTimers(); vi.restoreAllMocks(); });
@@ -191,4 +192,66 @@ test('the 3-second hold opens the parent area from the app', async () => {
   act(() => { vi.advanceTimersByTime(3100); });
   vi.useRealTimers();
   expect(await screen.findByTestId('parent-home')).toBeTruthy();
+});
+
+const rulesSong = (): Song => {
+  const s = songFromTyped('R', 'C D E F', '🐸') as Song;
+  return { ...s, id: 'r' };
+};
+const textOf = (s: Song) => serializeTypedNotes(s.tempo, s.notes);
+
+test('editing only the tempo of a rules song keeps rules', () => {
+  const orig = rulesSong();
+  const s = songFromTyped('R', textOf(orig).replace('tempo 80', 'tempo 100'), '🐸', 'Song', orig) as Song;
+  expect(s).toMatchObject({ fingeringSource: 'rules', tempo: 100 });
+});
+
+test('changing one pitch of a rules song works the fingers out again', () => {
+  const orig = songFromTyped('R', 'C D E F G', '🐸') as Song;
+  const s = songFromTyped('R', textOf(orig).replace('G(5)', 'C5'), '🐸', 'Song', orig) as Song;
+  expect(s.fingeringSource).toBe('rules');
+  expect(s.notes.map(n => n.finger)).toEqual((songFromTyped('R', 'C D E F C5', '🐸') as Song).notes.map(n => n.finger));
+});
+
+test('changing one finger gives parent', () => {
+  const orig = rulesSong();
+  const s = songFromTyped('R', textOf(orig).replace('C(1)', 'C(3)'), '🐸', 'Song', orig) as Song;
+  expect(s.fingeringSource).toBe('parent');
+  expect(s.notes[0].finger).toBe(3);
+});
+
+test('a sheet song edited without finger changes stays sheet', () => {
+  const orig: Song = { ...rulesSong(), fingeringSource: 'sheet', notes: [{ midi: 60, beats: 1, finger: 2 }, { midi: 62, beats: 1, finger: 4 }] };
+  const s = songFromTyped('S', textOf(orig).replace('tempo 80', 'tempo 70'), '🐸', 'Song', orig) as Song;
+  expect(s.fingeringSource).toBe('sheet');
+  expect(s.notes.map(n => n.finger)).toEqual([2, 4]);
+});
+
+test('a song with no pitched note cannot be saved', () => {
+  render(<SongEditor lang="en" editing={false} draft={{ title: 'A', text: 'tempo 80\n', picture: '🐸' }} onSave={() => {}} onCancel={() => {}} />);
+  expect(screen.getByTestId('editor-empty')).toBeTruthy();
+  expect(screen.getByRole('button', { name: 'Save' })).toBeDisabled();
+  fireEvent.input(screen.getByLabelText('Notes'), { target: { value: '_ _' } });
+  expect(screen.getByRole('button', { name: 'Save' })).toBeDisabled();
+});
+
+test('a failed save keeps the editor open and shows an error', async () => {
+  const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+  home();
+  fireEvent.click(await screen.findByRole('button', { name: 'Type notes' }));
+  fireEvent.input(screen.getByLabelText('Notes'), { target: { value: 'C D' } });
+  globalThis.indexedDB = { open() { throw new Error('blocked'); } } as unknown as IDBFactory;
+  fireEvent.click(screen.getByRole('button', { name: 'Save' }));
+  expect(await screen.findByTestId('storage-error')).toBeTruthy();
+  expect(screen.getByTestId('song-editor')).toBeTruthy();
+  expect(warn).toHaveBeenCalled();
+});
+
+test('the parent area still opens when the settings cannot be read', async () => {
+  const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+  globalThis.indexedDB = { open() { throw new Error('blocked'); } } as unknown as IDBFactory;
+  home();
+  expect(await screen.findByTestId('parent-home')).toBeTruthy();
+  expect(screen.getByTestId('storage-error')).toBeTruthy();
+  warn.mockRestore();
 });
