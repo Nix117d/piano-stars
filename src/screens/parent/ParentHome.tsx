@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'preact/hooks';
 import { t } from '../../i18n';
 import type { NoteSource, SourceStatus } from '../../midi/note-source';
-import { downloadSong } from '../../song/midi-export';
+import { downloadSong, exportFileNames } from '../../song/midi-export';
 import { parseMidiFile } from '../../song/midi-file';
 import type { ImportResult } from '../../song/import-result';
 import { parseMusicXml, parseMxl } from '../../song/musicxml';
@@ -104,6 +104,8 @@ export function ParentHome({ source, status, startResult, onStartKeyboard, onSet
     });
   };
 
+  // Names are given in list order, so each song keeps the same one between exports.
+  const fileNames = exportFileNames(songs.map(s => s.title));
   const banner = failed && <p class="error-box parent-error" role="alert" data-testid="storage-error">{t(lang, 'parent.error')}</p>;
   if (view.kind === 'review') {
     return (
@@ -144,10 +146,10 @@ export function ParentHome({ source, status, startResult, onStartKeyboard, onSet
       </div>
       <div class="parent-scroll">
         <ul class="song-list">
-          {songs.map(song => (
+          {songs.map((song, i) => (
             <SongRow key={song.id} song={song} lang={lang} speed={settings.speeds[song.id] ?? 'slow'}
               onEdit={() => editSong(song)} onPicture={() => setPictureFor(song)}
-              onExport={() => { try { downloadSong(song); setGuideOpen(true); } catch (e) { fail(e); } }}
+              onExport={() => { try { downloadSong(song, fileNames[i]); setGuideOpen(true); } catch (e) { fail(e); } }}
               onToggleHidden={() => void toggleHidden(song)}
               onDelete={() => setAsk({ message: t(lang, 'confirm.delete', { title: song.title }), onYes: () => void deleteSong(song.id).then(refresh).catch(fail) })}
               onSpeed={(s: Speed) => void changeSettings({ speeds: { ...settings.speeds, [song.id]: s } })} />

@@ -41,15 +41,33 @@ export function exportSmf0(song: Song): Uint8Array<ArrayBuffer> {
   ]);
 }
 
-/** A short 8.3-style name the keyboard can list, e.g. ZIEGINDS.MID. */
-export function exportFileName(title: string): string {
-  const base = title.normalize('NFD').replace(/[^A-Za-z0-9]/g, '').toUpperCase().slice(0, 8);
-  return `${base || 'SONG'}.MID`;
+/**
+ * A short 8.3-style name the keyboard can list, e.g. ZIEGKDS.MID for "Zie, ginds komt de
+ * stoomboot": the first word (at least 4 letters of it), then the first letter of each other
+ * word, 8 characters at most. A name in `taken` (any case) gets a digit at the end instead:
+ * BELLAC2.MID, BELLAC3.MID...
+ */
+export function exportFileName(title: string, taken: Iterable<string> = []): string {
+  const words = title.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase()
+    .split(/[^A-Z0-9]+/).filter(w => w !== '');
+  const [first = '', ...rest] = words;
+  const initials = rest.map(w => w[0]).join('');
+  const base = (first.slice(0, Math.max(4, 8 - initials.length)) + initials).slice(0, 8) || 'SONG';
+  const used = new Set([...taken].map(n => n.toUpperCase()));
+  let name = base;
+  for (let i = 2; used.has(`${name}.MID`); i++) name = base.slice(0, 8 - String(i).length) + i;
+  return `${name}.MID`;
 }
 
-/** Downloads the file through a temporary link. */
-export function downloadSong(song: Song): string {
-  const fileName = exportFileName(song.title);
+/** A file name for each title, in order, none the same as an earlier one (see `exportFileName`). */
+export function exportFileNames(titles: string[]): string[] {
+  const names: string[] = [];
+  for (const title of titles) names.push(exportFileName(title, names));
+  return names;
+}
+
+/** Downloads the file through a temporary link, as `fileName` (by default from the title). */
+export function downloadSong(song: Song, fileName = exportFileName(song.title)): string {
   const url = URL.createObjectURL(new Blob([exportSmf0(song)], { type: 'audio/midi' }));
   const a = document.createElement('a');
   a.href = url;

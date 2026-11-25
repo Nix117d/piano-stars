@@ -267,11 +267,12 @@ test('Save for keyboard downloads a plain file name and shows the guide', async 
   const names: string[] = [];
   vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(function (this: HTMLAnchorElement) { names.push(this.download); });
   await saveSong(userSong('Zie ginds komt'));
+  await saveSong({ ...userSong('Zie, ginds komt'), createdAt: 20 }); // the same short name
   home();
   const row = await screen.findByTestId('parent-song-Zie ginds komt');
   vi.useFakeTimers({ toFake: ['setTimeout'] });
   fireEvent.click(within(row).getByRole('button', { name: 'Save for keyboard' }));
-  expect(names).toEqual(['ZIEGINDS.MID']);
+  expect(names).toEqual(['ZIEGK.MID']);
   expect(create).toHaveBeenCalledWith(expect.objectContaining({ type: 'audio/midi' }));
   expect(revoke).not.toHaveBeenCalled();
   vi.advanceTimersByTime(1000);
@@ -282,6 +283,9 @@ test('Save for keyboard downloads a plain file name and shows the guide', async 
   expect(guide).toHaveTextContent('Storage Mode must be OFF');
   fireEvent.click(within(guide).getByRole('button', { name: 'Close' }));
   expect(screen.queryByTestId('export-guide')).toBeNull();
+  // A later song whose short name is taken gets a digit, so the keyboard lists both.
+  fireEvent.click(within(screen.getByTestId('parent-song-Zie, ginds komt')).getByRole('button', { name: 'Save for keyboard' }));
+  expect(names).toEqual(['ZIEGK.MID', 'ZIEGK2.MID']);
   // Built-in songs get the button too.
   expect(within(await screen.findByTestId('parent-song-cde')).getByRole('button', { name: 'Save for keyboard' })).toBeTruthy();
 });
