@@ -38,12 +38,17 @@ describe('parseMidiFile', () => {
     expect(d.ok && d.tempo).toBe(80);
   });
 
-  test('title from track name or header name', () => {
+  test('title from the header name first, then the track name, else none', () => {
     const notes = [n(60, 0, 1)];
+    // The file's own title wins over an instrument name on the note track.
+    const both = parseMidiFile(build([{ channel: 0, name: 'Piano', notes }], undefined, 'Zie ginds'));
+    expect(both.ok && both.title).toBe('Zie ginds');
     const a = parseMidiFile(build([{ channel: 0, name: 'Melody', notes }]));
     expect(a.ok && a.title).toBe('Melody');
     const b = parseMidiFile(build([{ channel: 0, notes }], undefined, 'Song'));
     expect(b.ok && b.title).toBe('Song');
+    const none = parseMidiFile(build([{ channel: 0, notes }]));
+    expect(none.ok && 'title' in none).toBe(false); // so the file name is used
   });
 
   test('overlapping notes take the onset spacing; short last note has 0.25 minimum', () => {

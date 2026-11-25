@@ -48,7 +48,9 @@ export function parseMidiFile(bytes: Uint8Array): ImportResult {
   });
 
   const tempo = Math.round(midi.header.tempos[0]?.bpm ?? DEFAULT_TEMPO) || DEFAULT_TEMPO;
-  const title = track.name?.trim() || midi.header.name?.trim() || undefined;
+  // The file's title field (the first track's name) before the note track's own name, which is
+  // often just an instrument ("Piano"). With neither, the caller falls back to the file name.
+  const title = midi.header.name?.trim() || track.name?.trim() || undefined;
   const fitted = fitToKeyboard(notes);
   return {
     ok: true,
