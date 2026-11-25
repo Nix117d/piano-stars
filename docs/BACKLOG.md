@@ -15,6 +15,8 @@ Things that are parked or worth doing later. None of them block normal use.
 
 ## Worth doing later
 
+- Save and load your own songs as a file, so they can move between devices or web addresses. Songs are stored per address on the tablet, so a song typed on the test address didn't carry over to the hosted app.
+
 - Accept notes only from the keyboard's channel 1, so a demo song or style playing on the keyboard isn't counted as presses.
 - Stop the Android back gesture from leaving a song mid-way (a history guard on the play screens).
 - Guard against a malformed MusicXML file with `divisions` = 0, which would give a Level 2 song that never ends.
