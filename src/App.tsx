@@ -17,6 +17,7 @@ import type { Song } from './song/types';
 import { loadBests, loadLibrary, type Bests } from './songs/library';
 import { recordResult, type Level, type Settings } from './store/db';
 import { useSettings } from './store/use-settings';
+import { useWakeLock } from './ui/use-wake-lock';
 import './screens/screens.css';
 
 type StartResult = Awaited<ReturnType<MidiInput['start']>>;
@@ -82,6 +83,10 @@ export function App({ source: given }: { source?: NoteSource }) {
   const ready = settings !== undefined;
   useEffect(() => { if (settings) void reload(settings); }, [ready]);
 
+  const needsKeys = route.screen === 'hand' || route.screen === 'play1' || route.screen === 'play2';
+  // The hand screen and the play screens keep the screen on.
+  useWakeLock(needsKeys);
+
   if (!settings || !songs) return null;
   const lang = settings.childLang;
   const toPicker = () => setRoute({ screen: 'picker' });
@@ -115,7 +120,6 @@ export function App({ source: given }: { source?: NoteSource }) {
       .catch((e: unknown) => console.warn('Could not save the result', e));
   };
 
-  const needsKeys = route.screen === 'hand' || route.screen === 'play1' || route.screen === 'play2';
   const unplugged = needsKeys && !connected && !tapMode;
   const playProps = { source, lang, paused: unplugged, tapMode, onHome: toPicker };
 

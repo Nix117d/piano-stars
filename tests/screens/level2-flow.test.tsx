@@ -103,3 +103,30 @@ test('level 2: no click sounds when the metronome click is off', async () => {
   expect(screen.getByTestId('count-in').querySelectorAll('[data-filled]')).toHaveLength(4); // the beat runs
   expect(click).not.toHaveBeenCalled();
 });
+
+test('level 2: while the app is hidden the song pauses, without the plug screen', async () => {
+  const fake = await openLevel2();
+  vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout', 'requestAnimationFrame', 'cancelAnimationFrame', 'performance'] });
+  const setHidden = (hidden: boolean) => {
+    Object.defineProperty(document, 'hidden', { configurable: true, get: () => hidden });
+    Object.defineProperty(document, 'visibilityState', { configurable: true, get: () => (hidden ? 'hidden' : 'visible') });
+    act(() => { document.dispatchEvent(new Event('visibilitychange')); });
+  };
+  try {
+    act(() => fake.press(60, performance.now()));
+    advance(2000);
+    setHidden(true);
+    advance(10000); // nothing is missed while hidden
+    expect(screen.queryByTestId('plug-screen')).toBeNull();
+    expect(screen.queryByTestId('results')).toBeNull();
+    expect(screen.getByTestId('play2-screen').querySelector('[data-wobble]')).toBeNull();
+    setHidden(false);
+    advance(1500); // the first note is due 2000 ms after coming back: not missed yet
+    expect(screen.getByTestId('play2-screen').querySelector('[data-wobble]')).toBeNull();
+    advance(900); // now 400 ms late: missed
+    expect(screen.getByTestId('key-60')).toHaveAttribute('data-wobble', 'true');
+  } finally {
+    delete (document as unknown as Record<string, unknown>).hidden;
+    delete (document as unknown as Record<string, unknown>).visibilityState;
+  }
+});

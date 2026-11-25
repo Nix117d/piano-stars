@@ -48,16 +48,32 @@ export function PlayLevel2({ song, startTime, speed, metronome, source, lang, pa
   const finished = useRef(false);
   const pausedRef = useRef(paused);
   pausedRef.current = paused;
+  // A hidden app (another app in front, the screen off) pauses the song like an unplugged
+  // keyboard, but without the plug screen. Otherwise the first frame back would miss every note.
+  const hiddenRef = useRef(document.hidden);
+  const [hidden, setHidden] = useState(document.hidden);
+  const stopped = () => pausedRef.current || hiddenRef.current;
   const react = (kind: Feedback['kind'], size: Feedback['size'], midi: number) =>
     setFeedback(f => ({ kind, size, midi, id: (f?.id ?? 0) + 1 }));
 
-  // The session follows `paused` here (not in an effect, which could run a frame late), so what the loop
-  // and the presses see always agrees with it.
+  // The session follows `paused` and `hidden` here (not in an effect, which could run a frame late), so
+  // what the loop and the presses see always agrees with them.
   const syncPause = (now: number) => {
-    if (pausedRef.current === session.paused) return;
-    if (pausedRef.current) { session.pause(now); return; }
+    if (stopped() === session.paused) return;
+    if (stopped()) { session.pause(now); return; }
     session.resume(now);
   };
+  const syncRef = useRef(syncPause);
+  syncRef.current = syncPause;
+  useEffect(() => {
+    const onVisibility = () => {
+      hiddenRef.current = document.hidden;
+      syncRef.current(performance.now());
+      setHidden(document.hidden);
+    };
+    document.addEventListener('visibilitychange', onVisibility);
+    return () => document.removeEventListener('visibilitychange', onVisibility);
+  }, []);
 
   // One loop for the beat (dots and click), the misses and the end. The drawing of the bubbles is in FallingLane.
   const midiAt = (index: number) => song.notes[index].midi!;
@@ -65,7 +81,7 @@ export function PlayLevel2({ song, startTime, speed, metronome, source, lang, pa
     let raf = requestAnimationFrame(function frame() {
       const now = performance.now();
       syncPause(now);
-      if (!pausedRef.current && !finished.current) {
+      if (!stopped() && !finished.current) {
         const k = Math.floor((now - session.startTime) / session.beatMs);
         if (k > lastBeat.current && k >= 0) {
           lastBeat.current = k;
@@ -85,7 +101,7 @@ export function PlayLevel2({ song, startTime, speed, metronome, source, lang, pa
   }, [session, metronome]);
 
   const handle = (midi: number, time: number) => {
-    if (paused || finished.current) return;
+    if (stopped() || finished.current) return;
     syncPause(performance.now());
     const r = session.press(midi, time);
     if (r.kind === 'ignored') return;
@@ -153,7 +169,7 @@ export function PlayLevel2({ song, startTime, speed, metronome, source, lang, pa
             </div>
           )}
         </div>
-        <FallingLane session={session} stage={stage} fingers={fingers} paused={paused} />
+        <FallingLane session={session} stage={stage} fingers={fingers} paused={paused || hidden} />
         <div class="keyboard-area">
           <Keyboard
             low={range.low}

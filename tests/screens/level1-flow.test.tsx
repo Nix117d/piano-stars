@@ -157,3 +157,22 @@ test('starting the keyboard input is tried again until it gives ok', async () =>
   await back();
   expect(start).toHaveBeenCalledTimes(2);
 });
+
+test('the screen stays on from the hand screen through play, and is let go on leaving', async () => {
+  const release = vi.fn(async () => {});
+  const request = vi.fn(async () => ({ released: false, release }));
+  Object.defineProperty(navigator, 'wakeLock', { configurable: true, value: { request } });
+  try {
+    const fake = await openSong();
+    await waitFor(() => expect(request).toHaveBeenCalledWith('screen'));
+    act(() => fake.press(60)); // on to the play screen: still the same lock
+    expect(screen.getByTestId('play-screen')).toBeTruthy();
+    expect(release).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole('button', { name: 'Home' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Home' })); // the second tap confirms
+    await screen.findByTestId('picker');
+    expect(release).toHaveBeenCalled();
+  } finally {
+    delete (navigator as unknown as Record<string, unknown>).wakeLock;
+  }
+});
