@@ -1,7 +1,7 @@
 import { render } from 'preact';
+import { App } from './App';
+import { requestPersistence } from './store/db';
 
-function App() {
-  return <h1>Piano Stars</h1>;
-}
+void requestPersistence();
 
 render(<App />, document.getElementById('app')!);

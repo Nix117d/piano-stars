@@ -50,3 +50,11 @@ test('changing feedbackId replays sparkle on the same key', () => {
   rerender(<Keyboard low={60} high={72} sparkle={64} feedbackId={2} />);
   expect(screen.getByTestId('sparkle')).not.toBe(before);
 });
+
+test('labels put finger numbers on keys besides the glowing one', () => {
+  render(<Keyboard low={60} high={72} glow={{ midi: 60, finger: 1 }} labels={{ 60: 3, 62: 2, 64: 3 }} />);
+  expect(within(screen.getByTestId('key-60')).getByText('1')).toBeTruthy();
+  expect(within(screen.getByTestId('key-62')).getByText('2')).toBeTruthy();
+  expect(within(screen.getByTestId('key-64')).getByText('3')).toBeTruthy();
+  expect(within(screen.getByTestId('key-65')).queryByText(/\d/)).toBeNull();
+});

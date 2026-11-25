@@ -26,3 +26,30 @@
 .strip-range { position: absolute; top: 0; height: 100%; box-sizing: border-box; border: 3px solid #FB8C00; background: rgba(251, 140, 0, 0.25); border-radius: 4px; z-index: 2; pointer-events: none; }
 
 .hand { width: 100%; max-width: 240px; height: auto; user-select: none; }
+
+/* Character (the frog) */
+.character { display: inline-block; width: 100%; height: 100%; }
+.character svg { display: block; width: 100%; height: 100%; overflow: visible; transform-origin: 50% 100%; }
+.character[data-mood='hop'] svg { animation: frog-hop 350ms ease-out; }
+.character[data-mood='shake'] svg { animation: frog-shake 400ms ease-in-out; }
+.character[data-mood='dance'] svg { animation: frog-dance 900ms ease-in-out infinite; }
+@keyframes frog-hop { 0%, 100% { translate: 0 0; } 45% { translate: 0 -34px; scale: 1 1.05; } 80% { scale: 1.06 0.94; } }
+@keyframes frog-shake { 0%, 100% { rotate: 0deg; } 20%, 60% { rotate: -9deg; } 40%, 80% { rotate: 9deg; } }
+@keyframes frog-dance { 0%, 100% { translate: 0 0; rotate: -6deg; } 25% { translate: 0 -24px; rotate: 0deg; } 50% { translate: 0 0; rotate: 6deg; } 75% { translate: 0 -24px; rotate: 0deg; } }
+
+/* Parent-area hold button: quiet, so it doesn't invite tapping */
+.hold-button { position: relative; width: 64px; height: 64px; border: none; border-radius: 50%; background: transparent; font-size: 26px; opacity: 0.35; touch-action: none; user-select: none; -webkit-user-select: none; -webkit-tap-highlight-color: transparent; }
+.hold-ring { position: absolute; inset: 4px; border-radius: 50%; pointer-events: none; }
+.hold-button[data-holding='true'] { opacity: 0.8; }
+.hold-button[data-holding='true'] .hold-ring { background: conic-gradient(#43A047 var(--hold-fill, 0turn), transparent 0); animation: hold-fill var(--hold-ms) linear forwards; mask: radial-gradient(circle, transparent 60%, #000 61%); }
+@property --hold-fill { syntax: '<angle>'; inherits: false; initial-value: 0turn; }
+@keyframes hold-fill { to { --hold-fill: 1turn; } }
+
+/* Play screen pieces */
+.thumb-marker { position: absolute; bottom: 4px; transform: translateX(-50%); max-width: 260px; box-sizing: border-box; padding: 8px 18px; border-radius: 22px; background: #fff; border: 3px solid #FB8C00; font: 700 24px system-ui, sans-serif; color: #1a1a1a; white-space: nowrap; box-shadow: 0 3px 8px rgba(0, 0, 0, 0.15); z-index: 3; pointer-events: none; animation: marker-pop 250ms ease-out; }
+.thumb-marker-arrow { position: absolute; bottom: -6px; margin-left: -10px; border: 10px solid transparent; border-top-color: #FB8C00; border-bottom: 0; z-index: 3; pointer-events: none; }
+@keyframes marker-pop { from { scale: 0.6; opacity: 0; } }
+.home-button { position: relative; }
+.home-button[data-armed='true'] { background: #FFE082; animation: home-ask 600ms ease-in-out infinite; }
+.home-ask { position: absolute; top: -6px; right: -6px; width: 30px; height: 30px; border-radius: 50%; background: #FB8C00; color: #fff; font: 800 22px/30px system-ui, sans-serif; }
+@keyframes home-ask { 50% { scale: 1.08; } }
