@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'preact/hooks';
 import { FakeSource } from './midi/fake-source';
 import { MidiInput } from './midi/midi-input';
-import type { NoteSource } from './midi/note-source';
+import type { NoteSource, SourceStatus } from './midi/note-source';
 import { Level1Session } from './play/level1';
 import { starsLevel1, starsLevel2, type Stars } from './play/scoring';
 import { HandPlacement } from './screens/HandPlacement';
@@ -9,6 +9,7 @@ import { Medals } from './screens/Medals';
 import { Picker } from './screens/Picker';
 import { PlayLevel1 } from './screens/PlayLevel1';
 import { PlayLevel2 } from './screens/PlayLevel2';
+import { ParentHome } from './screens/parent/ParentHome';
 import { PlugIn } from './screens/PlugIn';
 import { Results } from './screens/Results';
 import type { Song } from './song/types';
@@ -25,7 +26,8 @@ export type Route =
   | { screen: 'play2'; song: Song; startTime: number }
   | { screen: 'results'; song: Song; level: Level; stars: Stars }
   | { screen: 'medals' }
-  | { screen: 'parent' };
+  | { screen: 'parent' }
+  | { screen: 'settings' };
 
 /** Dev only (`?fake`): computer keys a s d f g h j k are the white keys C4 to C5; 0 plugs in and out. */
 const DEV_KEYS: Record<string, number> = { a: 60, s: 62, d: 64, f: 65, g: 67, h: 69, j: 71, k: 72 };
@@ -54,14 +56,15 @@ export function App({ source: given }: { source?: NoteSource }) {
   const [bests, setBests] = useState<Bests>({});
   const [route, setRoute] = useState<Route>({ screen: 'picker' });
   // No status has said "connected" yet, so there is no keyboard.
-  const [connected, setConnected] = useState(false);
+  const [status, setStatus] = useState<SourceStatus>({ connected: false });
+  const connected = status.connected;
   const [tapMode, setTapMode] = useState(false);
   // What starting the keyboard input gave ('ok', 'unsupported', 'denied'); the parent area shows it.
   const [startResult, setStartResult] = useState<StartResult>();
   const starting = useRef(false);
 
   useEffect(() => source.onStatus(s => {
-    setConnected(s.connected);
+    setStatus(s);
     if (s.connected) setTapMode(false);
   }), [source]);
 
@@ -157,7 +160,14 @@ export function App({ source: given }: { source?: NoteSource }) {
       body = <Medals songs={songs} bests={bests} lang={lang} level2={settings.level2Enabled} onBack={toPicker} />;
       break;
     case 'parent':
-      body = <Placeholder testId="parent-placeholder" icon={'⚙️'} onBack={() => { toPicker(); void reload(); }} />;
+      body = (
+        <ParentHome source={source} status={status} startResult={startResult} onStartKeyboard={startSource}
+          onSettings={() => setRoute({ screen: 'settings' })} onBack={() => { toPicker(); void reload(); }} />
+      );
+      break;
+    case 'settings':
+      // Task 14 fills this in.
+      body = <Placeholder testId="settings-placeholder" icon={'⚙️'} onBack={() => setRoute({ screen: 'parent' })} />;
       break;
   }
 
@@ -169,7 +179,7 @@ export function App({ source: given }: { source?: NoteSource }) {
   );
 }
 
-/** Stand-in for screens later tasks build (the parent area). */
+/** Stand-in for screens later tasks build (the settings). */
 function Placeholder({ testId, icon, onBack }: { testId: string; icon: string; onBack: () => void }) {
   return (
     <div class="screen placeholder-screen" data-testid={testId}>

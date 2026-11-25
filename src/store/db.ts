@@ -13,6 +13,8 @@ export interface Settings {
   celebrationSound: boolean;
   speeds: Record<string, Speed>;
   hiddenBuiltins: string[];
+  /** A picture the parent chose for a built-in song, by song id. */
+  pictureOverrides: Record<string, string>;
 }
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -23,6 +25,7 @@ export const DEFAULT_SETTINGS: Settings = {
   celebrationSound: true,
   speeds: {},
   hiddenBuiltins: [],
+  pictureOverrides: {},
 };
 
 interface PianoDB extends DBSchema {
