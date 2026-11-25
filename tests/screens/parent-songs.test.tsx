@@ -255,3 +255,25 @@ test('the parent area still opens when the settings cannot be read', async () =>
   expect(screen.getByTestId('storage-error')).toBeTruthy();
   warn.mockRestore();
 });
+
+test('Save for keyboard downloads a plain file name and shows the guide', async () => {
+  const create = vi.fn(() => 'blob:fake');
+  const revoke = vi.fn();
+  Object.assign(URL, { createObjectURL: create, revokeObjectURL: revoke });
+  const names: string[] = [];
+  vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(function (this: HTMLAnchorElement) { names.push(this.download); });
+  await saveSong(userSong('Zie ginds komt'));
+  home();
+  const row = await screen.findByTestId('parent-song-Zie ginds komt');
+  fireEvent.click(within(row).getByRole('button', { name: 'Save for keyboard' }));
+  expect(names).toEqual(['ZIEGINDS.MID']);
+  expect(create).toHaveBeenCalledWith(expect.objectContaining({ type: 'audio/midi' }));
+  expect(revoke).toHaveBeenCalledWith('blob:fake');
+  const guide = screen.getByTestId('export-guide');
+  expect(within(guide).getAllByRole('listitem')).toHaveLength(4);
+  expect(guide).toHaveTextContent('Storage Mode must be OFF');
+  fireEvent.click(within(guide).getByRole('button', { name: 'Close' }));
+  expect(screen.queryByTestId('export-guide')).toBeNull();
+  // Built-in songs get the button too.
+  expect(within(await screen.findByTestId('parent-song-cde')).getByRole('button', { name: 'Save for keyboard' })).toBeTruthy();
+});

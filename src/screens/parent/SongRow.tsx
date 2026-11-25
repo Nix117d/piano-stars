@@ -10,13 +10,14 @@ export interface SongRowProps {
   speed: Speed;
   onEdit: () => void;
   onPicture: () => void;
+  onExport: () => void;
   onToggleHidden: () => void;
   onDelete: () => void;
   onSpeed: (s: Speed) => void;
 }
 
 /** One song in the parent list. Built-ins can be hidden but not edited or deleted. */
-export function SongRow({ song, lang, speed, onEdit, onPicture, onToggleHidden, onDelete, onSpeed }: SongRowProps) {
+export function SongRow({ song, lang, speed, onEdit, onPicture, onExport, onToggleHidden, onDelete, onSpeed }: SongRowProps) {
   const builtin = song.source === 'builtin';
   const btn = (label: string, onClick: () => void, extra = '') =>
     <button type="button" class={`parent-button small ${extra}`} onClick={onClick}>{label}</button>;
@@ -36,6 +37,7 @@ export function SongRow({ song, lang, speed, onEdit, onPicture, onToggleHidden, 
       </label>
       {!builtin && btn(t(lang, 'parent.edit'), onEdit)}
       {btn(t(lang, 'parent.picture'), onPicture)}
+      {btn(t(lang, 'parent.export'), onExport)}
       {builtin
         ? btn(t(lang, song.hidden ? 'parent.show' : 'parent.hide'), onToggleHidden)
         : btn(t(lang, 'parent.delete'), onDelete, 'danger')}

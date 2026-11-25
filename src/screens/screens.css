@@ -139,3 +139,7 @@ button { font-family: inherit; color: inherit; cursor: pointer; touch-action: ma
 .toggle-knob { width: 28px; height: 28px; border-radius: 50%; background: #fff; transition: transform 0.15s; }
 .settings-toggle[aria-checked="true"] .toggle-track { background: #43A047; }
 .settings-toggle[aria-checked="true"] .toggle-knob { transform: translateX(28px); }
+
+.export-steps { margin: 0; padding-left: 28px; display: flex; flex-direction: column; gap: 12px; font-size: 20px; text-align: left; }
+.export-picture { font-size: 36px; vertical-align: middle; margin-right: 8px; }
+.export-warning { margin: 0; font-weight: 700; color: #b3261e; }

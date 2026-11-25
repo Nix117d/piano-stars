@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'preact/hooks';
 import { t } from '../../i18n';
 import type { NoteSource, SourceStatus } from '../../midi/note-source';
+import { downloadSong } from '../../song/midi-export';
 import { parseMidiFile } from '../../song/midi-file';
 import type { ImportResult } from '../../song/import-result';
 import { parseMusicXml, parseMxl } from '../../song/musicxml';
@@ -13,6 +14,7 @@ import {
 } from '../../store/db';
 import { ConfirmDialog } from './ConfirmDialog';
 import { ImportReview } from './ImportReview';
+import { KeyboardExportGuide } from './KeyboardExportGuide';
 import { KeyboardCheck } from './KeyboardCheck';
 import { PicturePicker } from './PicturePicker';
 import { SongEditor, type EditorDraft } from './SongEditor';
@@ -51,6 +53,7 @@ export function ParentHome({ source, status, startResult, onStartKeyboard, onSet
   const [view, setView] = useState<View>({ kind: 'home' });
   const [ask, setAsk] = useState<Ask>();
   const [pictureFor, setPictureFor] = useState<Song>();
+  const [guideOpen, setGuideOpen] = useState(false);
   const fileInput = useRef<HTMLInputElement>(null);
 
   const [failed, setFailed] = useState(false);
@@ -144,6 +147,7 @@ export function ParentHome({ source, status, startResult, onStartKeyboard, onSet
           {songs.map(song => (
             <SongRow key={song.id} song={song} lang={lang} speed={settings.speeds[song.id] ?? 'slow'}
               onEdit={() => editSong(song)} onPicture={() => setPictureFor(song)}
+              onExport={() => { downloadSong(song); setGuideOpen(true); }}
               onToggleHidden={() => void toggleHidden(song)}
               onDelete={() => setAsk({ message: t(lang, 'confirm.delete', { title: song.title }), onYes: () => void deleteSong(song.id).then(refresh).catch(fail) })}
               onSpeed={(s: Speed) => void changeSettings({ speeds: { ...settings.speeds, [song.id]: s } })} />
@@ -160,6 +164,7 @@ export function ParentHome({ source, status, startResult, onStartKeyboard, onSet
           </div>
         </div>
       )}
+      {guideOpen && <KeyboardExportGuide lang={lang} onClose={() => setGuideOpen(false)} />}
       {ask && <ConfirmDialog lang={lang} message={ask.message}
         onNo={() => setAsk(undefined)} onYes={() => { ask.onYes(); setAsk(undefined); }} />}
     </div>
