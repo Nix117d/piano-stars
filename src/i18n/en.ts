@@ -68,6 +68,14 @@ export const en = {
   'parent.back': 'Back',
   'song.untitled': 'Song',
   'parent.error': 'Something went wrong saving. Try again.',
+  'settings.childLang': 'Child language',
+  'settings.parentLang': 'Parent language',
+  'settings.level2': 'Level 2 (rhythm)',
+  'settings.level2Help': 'Shows the rhythm level on every song card.',
+  'settings.metronome': 'Metronome click',
+  'settings.metronomeHelp': 'A quiet tick on every beat in level 2.',
+  'settings.celebration': 'Celebration sound',
+  'settings.celebrationHelp': 'Plays a happy sound on the results screen.',
   'editor.empty': 'Add at least one note.',
 } as const;
 

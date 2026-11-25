@@ -125,3 +125,17 @@ button { font-family: inherit; color: inherit; cursor: pointer; touch-action: ma
 .dialog-text { margin: 0; font-size: 24px; font-weight: 700; }
 .dialog-buttons { display: flex; gap: 12px; justify-content: flex-end; }
 .parent-error { position: absolute; top: 8px; left: 50%; translate: -50% 0; z-index: 30; margin: 0; }
+
+.settings-row { display: flex; flex-direction: column; gap: 8px; }
+.settings-label { font-size: 20px; font-weight: 700; }
+.segmented { display: flex; gap: 10px; }
+.segment { flex: 1; min-height: 64px; border: 2px solid #E8E0D0; border-radius: 32px; background: #fff; font-size: 22px; font-weight: 700; }
+.segment.selected { background: #1E88E5; border-color: #1E88E5; color: #fff; }
+.settings-toggle { display: flex; align-items: center; justify-content: space-between; gap: 16px; min-height: 72px; padding: 8px 20px; border: 2px solid #E8E0D0; border-radius: 24px; background: #fff; text-align: left; }
+.toggle-text { display: flex; flex-direction: column; gap: 2px; }
+.toggle-label { font-size: 22px; font-weight: 700; }
+.toggle-help { font-size: 16px; color: #666; }
+.toggle-track { flex: none; width: 64px; height: 36px; border-radius: 18px; background: #CFCFCF; padding: 4px; box-sizing: border-box; display: flex; }
+.toggle-knob { width: 28px; height: 28px; border-radius: 50%; background: #fff; transition: transform 0.15s; }
+.settings-toggle[aria-checked="true"] .toggle-track { background: #43A047; }
+.settings-toggle[aria-checked="true"] .toggle-knob { transform: translateX(28px); }

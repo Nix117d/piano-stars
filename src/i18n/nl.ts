@@ -70,5 +70,13 @@ export const nl: Record<TKey, string> = {
   'parent.back': 'Terug',
   'song.untitled': 'Liedje',
   'parent.error': 'Er ging iets mis bij het bewaren. Probeer opnieuw.',
+  'settings.childLang': 'Taal van het kind',
+  'settings.parentLang': 'Taal voor ouders',
+  'settings.level2': 'Niveau 2 (ritme)',
+  'settings.level2Help': 'Toont het ritmeniveau op elk liedjeskaartje.',
+  'settings.metronome': 'Metronoomtik',
+  'settings.metronomeHelp': 'Een zacht tikje op elke tel in niveau 2.',
+  'settings.celebration': 'Feestgeluid',
+  'settings.celebrationHelp': 'Speelt een vrolijk geluid bij de uitslag.',
   'editor.empty': 'Voeg minstens één noot toe.',
 };

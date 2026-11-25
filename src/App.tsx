@@ -10,11 +10,12 @@ import { Picker } from './screens/Picker';
 import { PlayLevel1 } from './screens/PlayLevel1';
 import { PlayLevel2 } from './screens/PlayLevel2';
 import { ParentHome } from './screens/parent/ParentHome';
+import { SettingsScreen } from './screens/parent/Settings';
 import { PlugIn } from './screens/PlugIn';
 import { Results } from './screens/Results';
 import type { Song } from './song/types';
 import { loadBests, loadLibrary, type Bests } from './songs/library';
-import { DEFAULT_SETTINGS, getSettings, recordResult, type Level, type Settings } from './store/db';
+import { DEFAULT_SETTINGS, getSettings, recordResult, saveSettings, type Level, type Settings } from './store/db';
 import './screens/screens.css';
 
 type StartResult = Awaited<ReturnType<MidiInput['start']>>;
@@ -62,6 +63,7 @@ export function App({ source: given }: { source?: NoteSource }) {
   // What starting the keyboard input gave ('ok', 'unsupported', 'denied'); the parent area shows it.
   const [startResult, setStartResult] = useState<StartResult>();
   const starting = useRef(false);
+  const [settingsFailed, setSettingsFailed] = useState(false);
 
   useEffect(() => source.onStatus(s => {
     setStatus(s);
@@ -86,6 +88,18 @@ export function App({ source: given }: { source?: NoteSource }) {
   if (!settings) return null;
   const lang = settings.childLang;
   const toPicker = () => setRoute({ screen: 'picker' });
+
+  // The change shows at once; saving it can fail without undoing what is on screen.
+  const changeSettings = (patch: Partial<Settings>) => {
+    const next = { ...settings, ...patch };
+    setSettings(next);
+    saveSettings(next)
+      .then(() => setSettingsFailed(false))
+      .catch((e: unknown) => {
+        console.warn('Could not save the settings', e);
+        setSettingsFailed(true);
+      });
+  };
 
   // Both levels start on the hand screen; level 2's session only finds the first note there.
   const startSong = (song: Song, level: Level) => {
@@ -166,8 +180,7 @@ export function App({ source: given }: { source?: NoteSource }) {
       );
       break;
     case 'settings':
-      // Task 14 fills this in.
-      body = <Placeholder testId="settings-placeholder" icon={'⚙️'} onBack={() => setRoute({ screen: 'parent' })} />;
+      body = <SettingsScreen settings={settings} failed={settingsFailed} onChange={changeSettings} onBack={() => setRoute({ screen: 'parent' })} />;
       break;
   }
 
@@ -175,20 +188,6 @@ export function App({ source: given }: { source?: NoteSource }) {
     <div class="app">
       {body}
       {unplugged && <PlugIn lang={lang} onTapMode={() => setTapMode(true)} onHome={toPicker} />}
-    </div>
-  );
-}
-
-/** Stand-in for screens later tasks build (the settings). */
-function Placeholder({ testId, icon, onBack }: { testId: string; icon: string; onBack: () => void }) {
-  return (
-    <div class="screen placeholder-screen" data-testid={testId}>
-      <header class="top-bar">
-        <button type="button" class="round-button" aria-label="Back" onClick={onBack}>{'⬅️'}</button>
-        <span />
-        <span class="round-spacer" />
-      </header>
-      <div class="placeholder-icon">{icon}</div>
     </div>
   );
 }
