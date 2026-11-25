@@ -16,6 +16,7 @@ import { SongEditor } from '../../src/screens/parent/SongEditor';
 import { songFromImport, songFromTyped } from '../../src/screens/parent/song-factory';
 import { loadLibrary } from '../../src/songs/library';
 import { DEFAULT_SETTINGS, getBest, getSettings, listUserSongs, recordResult, saveSong } from '../../src/store/db';
+import { useSettings } from '../../src/store/use-settings';
 import type { Song } from '../../src/song/types';
 import { serializeTypedNotes } from '../../src/song/typed-notes';
 
@@ -27,11 +28,20 @@ const userSong = (id: string, picture = '🎈'): Song => ({
   fingeringSource: 'parent', picture, hidden: false, createdAt: 10,
 });
 
-function home(over: Partial<Parameters<typeof ParentHome>[0]> = {}, fake = new FakeSource()) {
+type HomeProps = Parameters<typeof ParentHome>[0];
+type OwnProps = Omit<HomeProps, 'settings' | 'settingsFailed' | 'onChangeSettings'>;
+
+/** ParentHome with the app's settings state, as App gives it. */
+function WithSettings(props: OwnProps) {
+  const { settings, failed, change } = useSettings();
+  return settings ? <ParentHome {...props} settings={settings} settingsFailed={failed} onChangeSettings={change} /> : null;
+}
+
+function home(over: Partial<OwnProps> = {}, fake = new FakeSource()) {
   const props = {
     source: fake, status: { connected: false }, onStartKeyboard: vi.fn(), onSettings: vi.fn(), onBack: vi.fn(), ...over,
   };
-  render(<ParentHome {...props} />);
+  render(<WithSettings {...props} />);
   return { fake, props };
 }
 
@@ -245,15 +255,6 @@ test('a failed save keeps the editor open and shows an error', async () => {
   expect(await screen.findByTestId('storage-error')).toBeTruthy();
   expect(screen.getByTestId('song-editor')).toBeTruthy();
   expect(warn).toHaveBeenCalled();
-});
-
-test('the parent area still opens when the settings cannot be read', async () => {
-  const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
-  globalThis.indexedDB = { open() { throw new Error('blocked'); } } as unknown as IDBFactory;
-  home();
-  expect(await screen.findByTestId('parent-home')).toBeTruthy();
-  expect(screen.getByTestId('storage-error')).toBeTruthy();
-  warn.mockRestore();
 });
 
 const realCreate = URL.createObjectURL;

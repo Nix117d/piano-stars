@@ -84,8 +84,58 @@ test('a setting is still there after the app is mounted again', async () => {
 test('a failed save keeps the change on screen and shows the storage error', async () => {
   await openSettings();
   vi.spyOn(console, 'warn').mockImplementation(() => {});
-  vi.spyOn(db, 'saveSettings').mockRejectedValue(new Error('full'));
+  vi.spyOn(db, 'updateSettings').mockRejectedValue(new Error('full'));
   fireEvent.click(screen.getByRole('switch', { name: /Metronome/ }));
   expect(await screen.findByTestId('storage-error')).toBeTruthy();
   expect(screen.getByRole('switch', { name: /Metronome/ })).toHaveAttribute('aria-checked', String(!DEFAULT_SETTINGS.metronomeClick));
+});
+
+test('hiding a built-in, then turning on level 2 in Settings, keeps both after a remount', async () => {
+  const { App } = await import('../../src/App');
+  await openSettings();
+  fireEvent.click(screen.getByRole('button', { name: 'Back' }));
+  const row = await screen.findByTestId('parent-song-cde');
+  fireEvent.click(within(row).getByRole('button', { name: 'Hide' }));
+  await waitFor(async () => expect((await getSettings()).hiddenBuiltins).toEqual(['cde']));
+  fireEvent.click(screen.getByRole('button', { name: 'Settings' }));
+  fireEvent.click(await screen.findByRole('switch', { name: /Level 2/ }));
+  await waitFor(async () => expect((await getSettings()).level2Enabled).toBe(true));
+  expect((await getSettings()).hiddenBuiltins).toEqual(['cde']);
+  cleanup();
+  render(<App source={new FakeSource()} />);
+  await openSettings();
+  expect(screen.getByRole('switch', { name: /Level 2/ })).toHaveAttribute('aria-checked', 'true');
+  fireEvent.click(screen.getByRole('button', { name: 'Back' }));
+  expect(await within(await screen.findByTestId('parent-song-cde')).findByRole('button', { name: 'Show' })).toBeTruthy();
+});
+
+test('a failed save is not undone when leaving the parent area, and the error stays', async () => {
+  await openSettings();
+  fireEvent.click(screen.getByRole('button', { name: 'Back' }));
+  vi.spyOn(console, 'warn').mockImplementation(() => {});
+  vi.spyOn(db, 'updateSettings').mockRejectedValue(new Error('full'));
+  fireEvent.click(within(await screen.findByTestId('parent-song-cde')).getByRole('button', { name: 'Hide' }));
+  expect(await screen.findByTestId('storage-error')).toBeTruthy();
+  fireEvent.click(screen.getByRole('button', { name: 'Back' }));
+  // The picker still leaves the song out: the change is kept in memory.
+  expect(await screen.findByText('Kies een liedje')).toBeTruthy();
+  await act(async () => { await new Promise(r => setTimeout(r, 50)); });
+  expect(screen.queryByTestId('song-card-cde')).toBeNull();
+  // Back in the parent area the song is still hidden and the error still shows.
+  const hold = await screen.findByTestId('hold-button');
+  vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
+  fireEvent.pointerDown(hold);
+  act(() => { vi.advanceTimersByTime(3100); });
+  vi.useRealTimers();
+  expect(await within(await screen.findByTestId('parent-song-cde')).findByRole('button', { name: 'Show' })).toBeTruthy();
+  expect(screen.getByTestId('storage-error')).toBeTruthy();
+});
+
+test('the parent area still opens, with the error, when the settings cannot be read', async () => {
+  vi.spyOn(console, 'warn').mockImplementation(() => {});
+  globalThis.indexedDB = { open() { throw new Error('blocked'); } } as unknown as IDBFactory;
+  await openSettings();
+  fireEvent.click(screen.getByRole('button', { name: 'Back' }));
+  expect(await screen.findByTestId('parent-home')).toBeTruthy();
+  expect(screen.getByTestId('storage-error')).toBeTruthy();
 });

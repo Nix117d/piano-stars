@@ -88,6 +88,19 @@ export const getSettings = (): Promise<Settings> =>
 export const saveSettings = (s: Settings): Promise<void> =>
   withDb(async (db) => { await db.put('settings', s, SETTINGS_KEY); });
 
+/**
+ * Merges `patch` into the stored settings, reading and writing in one readwrite transaction, so
+ * patches saved at the same time can't drop each other. Returns the merged settings.
+ */
+export const updateSettings = (patch: Partial<Settings>): Promise<Settings> =>
+  withDb(async (db) => {
+    const tx = db.transaction('settings', 'readwrite');
+    const next: Settings = { ...DEFAULT_SETTINGS, ...(await tx.store.get(SETTINGS_KEY)), ...patch };
+    await tx.store.put(next, SETTINGS_KEY);
+    await tx.done;
+    return next;
+  });
+
 export async function requestPersistence(): Promise<boolean> {
   try {
     return (await navigator.storage?.persist?.()) ?? false;

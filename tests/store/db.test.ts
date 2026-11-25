@@ -3,7 +3,7 @@ import { beforeEach, expect, test } from 'vitest';
 import { IDBFactory } from 'fake-indexeddb';
 import {
   DEFAULT_SETTINGS, deleteSong, getBest, getSettings, listUserSongs, recordResult,
-  requestPersistence, resetMedals, saveSettings, saveSong,
+  requestPersistence, resetMedals, saveSettings, saveSong, updateSettings,
 } from '../../src/store/db';
 import type { Song } from '../../src/song/types';
 
@@ -56,4 +56,19 @@ test('requestPersistence returns the result, and false on rejection', async () =
   set(async () => { throw new Error('no'); });
   expect(await requestPersistence()).toBe(false);
   delete (nav as { storage?: unknown }).storage;
+});
+
+test('updateSettings merges a patch into the stored settings and returns the result', async () => {
+  await saveSettings({ ...DEFAULT_SETTINGS, hiddenBuiltins: ['a'] });
+  expect(await updateSettings({ level2Enabled: true })).toEqual({ ...DEFAULT_SETTINGS, hiddenBuiltins: ['a'], level2Enabled: true });
+  expect(await getSettings()).toEqual({ ...DEFAULT_SETTINGS, hiddenBuiltins: ['a'], level2Enabled: true });
+});
+
+test('patches saved at the same time do not drop each other', async () => {
+  await Promise.all([
+    updateSettings({ level2Enabled: true }),
+    updateSettings({ hiddenBuiltins: ['x'] }),
+    updateSettings({ childLang: 'en' }),
+  ]);
+  expect(await getSettings()).toMatchObject({ level2Enabled: true, hiddenBuiltins: ['x'], childLang: 'en' });
 });

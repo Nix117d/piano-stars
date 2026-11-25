@@ -15,7 +15,8 @@ import { PlugIn } from './screens/PlugIn';
 import { Results } from './screens/Results';
 import type { Song } from './song/types';
 import { loadBests, loadLibrary, type Bests } from './songs/library';
-import { DEFAULT_SETTINGS, getSettings, recordResult, saveSettings, type Level, type Settings } from './store/db';
+import { recordResult, type Level, type Settings } from './store/db';
+import { useSettings } from './store/use-settings';
 import './screens/screens.css';
 
 type StartResult = Awaited<ReturnType<MidiInput['start']>>;
@@ -52,8 +53,8 @@ function defaultSource(): NoteSource {
 
 export function App({ source: given }: { source?: NoteSource }) {
   const [source] = useState(() => given ?? defaultSource());
-  const [settings, setSettings] = useState<Settings>();
-  const [songs, setSongs] = useState<Song[]>([]);
+  const { settings, failed: settingsFailed, change: changeSettings } = useSettings();
+  const [songs, setSongs] = useState<Song[]>();
   const [bests, setBests] = useState<Bests>({});
   const [route, setRoute] = useState<Route>({ screen: 'picker' });
   // No status has said "connected" yet, so there is no keyboard.
@@ -63,43 +64,27 @@ export function App({ source: given }: { source?: NoteSource }) {
   // What starting the keyboard input gave ('ok', 'unsupported', 'denied'); the parent area shows it.
   const [startResult, setStartResult] = useState<StartResult>();
   const starting = useRef(false);
-  const [settingsFailed, setSettingsFailed] = useState(false);
 
   useEffect(() => source.onStatus(s => {
     setStatus(s);
     if (s.connected) setTapMode(false);
   }), [source]);
 
-  const reload = async () => {
-    const s = await getSettings().catch((e: unknown) => {
-      console.warn('Could not read the settings', e);
-      return DEFAULT_SETTINGS;
-    });
+  // The child's songs, from the settings in memory: a change that could not be saved still counts.
+  const reload = async (s: Settings) => {
     const lib = await loadLibrary(s);
-    setSongs(lib);
     setBests(await loadBests(lib).catch((e: unknown) => {
       console.warn('Could not read the best results', e);
       return {};
     }));
-    setSettings(s);
+    setSongs(lib);
   };
-  useEffect(() => { void reload(); }, []);
+  const ready = settings !== undefined;
+  useEffect(() => { if (settings) void reload(settings); }, [ready]);
 
-  if (!settings) return null;
+  if (!settings || !songs) return null;
   const lang = settings.childLang;
   const toPicker = () => setRoute({ screen: 'picker' });
-
-  // The change shows at once; saving it can fail without undoing what is on screen.
-  const changeSettings = (patch: Partial<Settings>) => {
-    const next = { ...settings, ...patch };
-    setSettings(next);
-    saveSettings(next)
-      .then(() => setSettingsFailed(false))
-      .catch((e: unknown) => {
-        console.warn('Could not save the settings', e);
-        setSettingsFailed(true);
-      });
-  };
 
   // Both levels start on the hand screen; level 2's session only finds the first note there.
   const startSong = (song: Song, level: Level) => {
@@ -176,11 +161,12 @@ export function App({ source: given }: { source?: NoteSource }) {
     case 'parent':
       body = (
         <ParentHome source={source} status={status} startResult={startResult} onStartKeyboard={startSource}
-          onSettings={() => setRoute({ screen: 'settings' })} onBack={() => { toPicker(); void reload(); }} />
+          settings={settings} settingsFailed={settingsFailed} onChangeSettings={changeSettings}
+          onSettings={() => setRoute({ screen: 'settings' })} onBack={() => { toPicker(); void reload(settings); }} />
       );
       break;
     case 'settings':
-      body = <SettingsScreen settings={settings} failed={settingsFailed} onChange={changeSettings} onBack={() => setRoute({ screen: 'parent' })} />;
+      body = <SettingsScreen settings={settings} failed={settingsFailed} onChange={p => void changeSettings(p)} onBack={() => setRoute({ screen: 'parent' })} />;
       break;
   }
 

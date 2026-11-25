@@ -9,9 +9,7 @@ import { serializeTypedNotes } from '../../song/typed-notes';
 import type { Song } from '../../song/types';
 import { loadLibrary } from '../../songs/library';
 import { freePicture } from '../../songs/pictures';
-import {
-  DEFAULT_SETTINGS, deleteSong, getSettings, resetMedals, saveSettings, saveSong, type Settings, type Speed,
-} from '../../store/db';
+import { deleteSong, resetMedals, saveSong, type Settings, type Speed } from '../../store/db';
 import { ConfirmDialog } from './ConfirmDialog';
 import { ImportReview } from './ImportReview';
 import { KeyboardExportGuide } from './KeyboardExportGuide';
@@ -32,6 +30,11 @@ export interface ParentHomeProps {
   status: SourceStatus;
   startResult?: 'ok' | 'unsupported' | 'denied';
   onStartKeyboard: () => void;
+  /** The app's settings; the parent area changes them only through `onChangeSettings`. */
+  settings: Settings;
+  /** Saving (or reading) the settings failed: show the storage error. */
+  settingsFailed: boolean;
+  onChangeSettings: (patch: Partial<Settings>) => Promise<void>;
   onSettings: () => void;
   onBack: () => void;
 }
@@ -47,9 +50,10 @@ async function readImport(file: File): Promise<ImportResult> {
   }
 }
 
-export function ParentHome({ source, status, startResult, onStartKeyboard, onSettings, onBack }: ParentHomeProps) {
-  const [settings, setSettings] = useState<Settings>();
-  const [songs, setSongs] = useState<Song[]>([]);
+export function ParentHome({
+  source, status, startResult, onStartKeyboard, settings, settingsFailed, onChangeSettings, onSettings, onBack,
+}: ParentHomeProps) {
+  const [songs, setSongs] = useState<Song[]>();
   const [view, setView] = useState<View>({ kind: 'home' });
   const [ask, setAsk] = useState<Ask>();
   const [pictureFor, setPictureFor] = useState<Song>();
@@ -59,23 +63,18 @@ export function ParentHome({ source, status, startResult, onStartKeyboard, onSet
   const [failed, setFailed] = useState(false);
   const fail = (e: unknown) => { console.warn('Storage problem in the parent area', e); setFailed(true); };
 
+  // Only the latest load may set the list, so a slow earlier one can't put back an old list.
+  const loads = useRef(0);
   const refresh = async () => {
-    try {
-      const s = await getSettings();
-      setSongs(await loadLibrary(s, true));
-      setSettings(s);
-    } catch (e) {
-      fail(e);
-      setSettings(s => s ?? DEFAULT_SETTINGS);
-    }
+    const n = ++loads.current;
+    const lib = await loadLibrary(settings, true);
+    if (n === loads.current) setSongs(lib);
   };
-  useEffect(() => { void refresh(); }, []);
-  if (!settings) return null;
+  useEffect(() => { void refresh(); }, [settings]);
+  if (!songs) return null;
   const lang = settings.parentLang;
   const newPicture = () => freePicture(songs.map(s => s.picture));
   const done = () => { setFailed(false); setView({ kind: 'home' }); return refresh(); };
-  const changeSettings = (patch: Partial<Settings>) =>
-    saveSettings({ ...settings, ...patch }).then(refresh).catch(fail);
 
   const pickFile = async (e: Event) => {
     const input = e.currentTarget as HTMLInputElement;
@@ -86,11 +85,11 @@ export function ParentHome({ source, status, startResult, onStartKeyboard, onSet
 
   const setPicture = (song: Song, picture: string) => {
     setPictureFor(undefined);
-    if (song.source === 'builtin') void changeSettings({ pictureOverrides: { ...settings.pictureOverrides, [song.id]: picture } });
+    if (song.source === 'builtin') void onChangeSettings({ pictureOverrides: { ...settings.pictureOverrides, [song.id]: picture } });
     else void saveSong({ ...song, picture }).then(refresh).catch(fail);
   };
 
-  const toggleHidden = (song: Song) => changeSettings({
+  const toggleHidden = (song: Song) => onChangeSettings({
     hiddenBuiltins: song.hidden
       ? settings.hiddenBuiltins.filter(id => id !== song.id)
       : [...settings.hiddenBuiltins, song.id],
@@ -106,7 +105,7 @@ export function ParentHome({ source, status, startResult, onStartKeyboard, onSet
 
   // Names are given in list order, so each song keeps the same one between exports.
   const fileNames = exportFileNames(songs.map(s => s.title));
-  const banner = failed && <p class="error-box parent-error" role="alert" data-testid="storage-error">{t(lang, 'parent.error')}</p>;
+  const banner = (failed || settingsFailed) && <p class="error-box parent-error" role="alert" data-testid="storage-error">{t(lang, 'parent.error')}</p>;
   if (view.kind === 'review') {
     return (
       <>{banner}<ImportReview lang={lang} result={view.result} fileName={view.fileName} picture={view.picture}
@@ -152,7 +151,7 @@ export function ParentHome({ source, status, startResult, onStartKeyboard, onSet
               onExport={() => { try { downloadSong(song, fileNames[i]); setGuideOpen(true); } catch (e) { fail(e); } }}
               onToggleHidden={() => void toggleHidden(song)}
               onDelete={() => setAsk({ message: t(lang, 'confirm.delete', { title: song.title }), onYes: () => void deleteSong(song.id).then(refresh).catch(fail) })}
-              onSpeed={(s: Speed) => void changeSettings({ speeds: { ...settings.speeds, [song.id]: s } })} />
+              onSpeed={(s: Speed) => void onChangeSettings({ speeds: { ...settings.speeds, [song.id]: s } })} />
           ))}
         </ul>
         {songs.length === 0 && <p class="hint">{t(lang, 'parent.noSongs')}</p>}
