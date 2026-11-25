@@ -48,14 +48,30 @@ export function handPositions(notes: Note[]): HandPosition[] {
 
 /**
  * Gives each finger no note uses a key by stepping along white keys from the nearest used finger
- * (the lower one when two are equally near).
+ * (the lower one when two are equally near). A filled finger never takes a key that another
+ * finger already has: it steps on, away from that nearest finger, to the next free white key.
+ * Fingers 2-4 must stay strictly between the keys of the used fingers on either side; when no
+ * free key fits there, the finger is left out. The thumb and little finger always get a key,
+ * since `positionWidth` and the hand screens need them.
  */
 function fillUnusedFingers(keys: Partial<Record<Finger, number>>): void {
   const used = FINGERS.filter(f => keys[f] !== undefined);
+  const taken = new Set(used.map(f => keys[f]!));
   for (const f of FINGERS) {
     if (keys[f] !== undefined) continue;
     const nearest = used.reduce((a, b) => (Math.abs(b - f) < Math.abs(a - f) ? b : a));
-    keys[f] = whiteKey(whiteIndex(keys[nearest]!) + (f - nearest));
+    const step = f > nearest ? 1 : -1;
+    const below = used.filter(u => u < f).map(u => keys[u]!);
+    const above = used.filter(u => u > f).map(u => keys[u]!);
+    const outer = f === 1 || f === 5;
+    const fits = (key: number) => outer
+      || ((below.length === 0 || key > Math.max(...below)) && (above.length === 0 || key < Math.min(...above)));
+    let index = whiteIndex(keys[nearest]!) + (f - nearest);
+    while (taken.has(whiteKey(index)) && fits(whiteKey(index))) index += step;
+    const key = whiteKey(index);
+    if (taken.has(key) || !fits(key)) continue;
+    keys[f] = key;
+    taken.add(key);
   }
 }
 

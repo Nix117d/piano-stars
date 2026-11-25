@@ -42,7 +42,7 @@
   - O, kom er eens kijken: listen carefully to the second half. The 1898 scan had two unclear spots, bars 12–13.
   - Sinterklaasje, bonne, bonne, bonne
   - Bella Ciao: it dips below middle C, to the A.
-  - Für Elise: it is now only the first 9 notes. Decide whether to keep it this short or extend it to the end of bar 4.
+  - Für Elise: now the whole first part (bars 1-22 with the first repeat, right hand, 128 notes). Listen carefully at bar 13, the big jump up to the high E (E6).
 - Also check on the tablet:
   - the screen stays on during a song;
   - the hand picture is big enough;

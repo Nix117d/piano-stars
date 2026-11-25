@@ -21,7 +21,7 @@ Plug the keyboard into the tablet with the USB cable, open Piano Stars and let y
 - O, kom er eens kijken
 - Sinterklaasje, bonne, bonne, bonne
 - Bella Ciao
-- Für Elise (just the famous opening)
+- Für Elise (the whole first part, bars 1-22, right hand)
 
 Three Sinterklaas songs are left out: "Hoor wie klopt daar, kind'ren", "De zak van Sinterklaas" and "Dag, Sinterklaasje". No old, free-to-use printed music for them could be found, and the app never uses a melody written down from memory. You can add them yourself (see below).
 

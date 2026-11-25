@@ -16,9 +16,8 @@ Conventions used in all songs:
   `crossesOnStep(assignFingering(notes)) === []` with the generated fingering, and every hand
   position spans at most 6 white keys (`MAX_POSITION_WIDTH`). No fingers are written into the
   typed text. Every semitone shift from -9 to +9 was also checked, and all of them pass, so the
-  key choice doesn't depend on the fingering. The exception is Für Elise (bars 1-22): every shift
-  passes the crossing and width checks, but only some keys avoid two fingers on one key in a
-  hand position (see its note below).
+  key choice doesn't depend on the fingering. (Für Elise shifted up 9 would reach C#7, one key
+  above the keyboard's top C7, though its fingering would still pass.)
 - Tempo is a comfortable child tempo in beats per minute of the beat unit above.
 
 ## Built in
@@ -30,7 +29,7 @@ Conventions used in all songs:
 | O, kom er eens kijken | "Zes December" in Katharina Leopold, *Sint Nikolaas, twaalf versjes met melodieën* (Groningen, 1898), the song's first publication, [p. 11 of the Commons scan](https://commons.wikimedia.org/w/index.php?title=File:Kath_Leopold,_Sint_Nikolaas._Twaalf_versjes_met_melodie%C3%ABn_(1898).pdf&page=11) (public domain). Leopold set her words to H.G. Nägeli's "Freut euch des Lebens", so this is the Nägeli tune as the Dutch song first printed it | All 24 bars (the last bar's rests dropped) | Written in D major (D4-D5). Transposed down a whole step to C major, C4-C5 | 6/8, eighth = 0.5 beat, dotted quarter = 1.5, tempo 90 (a dotted quarter at 60 per minute) |
 | Sinterklaasje, bonne, bonne, bonne | [nl.wikisource "Sinterklaas kapoentje"](https://nl.wikisource.org/wiki/Sinterklaas_kapoentje), second `{{muziek}}` score (the page gives this song after the first). Oldest source 1851 | All 8 bars | C major as written, C4-A4. Not transposed | 4/4, quarter = 1 beat, tempo 92 |
 | Bella Ciao | [Commons File:BellaCiao_Accordion.png](https://commons.wikimedia.org/wiki/File:BellaCiao_Accordion.png), an accordion arrangement released under CC0 of the Italian folk tune (public domain). Only the treble (melody) line is used. The LilyPond source on the file page gives the same notes | The whole verse: the upbeat of three eighths plus 8 bars | D minor (one flat) as written, A3-Bb4. Not transposed | 4/4, quarter = 1 beat, tempo 96 |
-| Für Elise | Beethoven, WoO 59, Breitkopf & Härtel *Beethoven's Werke* Serie 25 No. 298, [page 1 of the Commons copy of the IMSLP scan](https://commons.wikimedia.org/w/index.php?title=File:IMSLP51818-PMLP14377-Beethoven_Werke_Breitkopf_Serie_25_No_298_WoO_59_Fuer_Elise.pdf&page=1) (public domain) | The whole opening A section, bars 1-22, right hand only. The upbeat and bars 1-8 with the repeat taken (first-time bar: A, a quarter, then the upbeat again; second time through: bars 1-7 and the second-time bar A-B-C-D), then bars 9-22, ending on the A (F# in the built-in's key) at the start of bar 22 where the theme returns to the tonic (an eighth, as printed). The repeat of bars 9-22 is not taken, and the B section (bar 23 on, F major, with fast right-hand runs) is left out. Bars are numbered as usual, with both endings of the first repeat counted as bar 8 (parent's request for a longer piece; controller ruling) | Written in A minor (C4-E6). Transposed down a minor third to F# minor, A3-C#6, because in A minor the generated fingering puts two fingers on one key (bar 2 (both times through) and bar 16; see the notes below). B# and E# are typed as C and F | 3/8, eighth = 1 beat (a sixteenth = `/`, a dotted eighth = `:1.5`), tempo 80 |
+| Für Elise | Beethoven, WoO 59, Breitkopf & Härtel *Beethoven's Werke* Serie 25 No. 298, [page 1 of the Commons copy of the IMSLP scan](https://commons.wikimedia.org/w/index.php?title=File:IMSLP51818-PMLP14377-Beethoven_Werke_Breitkopf_Serie_25_No_298_WoO_59_Fuer_Elise.pdf&page=1) (public domain) | The whole opening A section, bars 1-22, right hand only. The upbeat and bars 1-8 with the repeat taken (first-time bar: A, a quarter, then the upbeat again; second time through: bars 1-7 and the second-time bar A-B-C-D), then bars 9-22, ending on the A at the start of bar 22 where the theme returns to the tonic (an eighth, as printed). The repeat of bars 9-22 is not taken, and the B section (bar 23 on, F major, with fast right-hand runs) is left out. Bars are numbered as usual, with both endings of the first repeat counted as bar 8 (parent's request for a longer piece; controller ruling) | A minor as written, C4-E6. Not transposed | 3/8, eighth = 1 beat (a sixteenth = `/`, a dotted eighth = `:1.5`), tempo 80 |
 
 ### Notes per song
 
@@ -39,15 +38,9 @@ Conventions used in all songs:
   bar of bar 22, which is not used), so no note was dropped. The sixteenth rests are kept as
   `_/`, so the rhythm is as printed. The melody has 128 notes in 41 generated hand positions, each
   at most 6 white keys wide, with no thumb crossing on a step. The rising C-E-A and E-G#-B
-  figures, the octave lift in bars 4 and 18 and the two-octave leap in bar 13 are hand
-  moves.
-- **Für Elise, key.** In the written A minor, bar 2 (both times through) and bar 16 (E4 A4 B4,
-  then E4 G#4 B4) give a hand position where finger 3 plays nothing and its filled-in key lands
-  on A4, the key finger 4 just played, which the "two fingers on one key" check rejects. Shifting
-  the whole piece passes every check at -8, -6, -3, -1, +4 and +6 semitones. Down a minor third
-  (F# minor, three sharps) has the fewest black keys of these and stays nearest middle C, so the
-  built-in uses it. No fingers are written into the typed text. Note names elsewhere in this
-  section are as printed (A minor).
+  figures, the octave E4-E5 in bars 4 and 18 and the two-octave leap to E6 in bar 13 are hand
+  moves. In bars 2 and 16 one position has no note for finger 3 and no free white key between
+  fingers 2 (G#4) and 4 (A4), so the hand screens show no key for finger 3 there.
 - **Sinterklaas kapoentje and Sinterklaasje bonne.** The nl.wikisource notation is a row of note
   glyphs from its `{{muziek}}` template (for example `2g1` = a half note on g', `4c1` = a quarter
   on middle C, `2p…` = dotted half, `8…` = eighth). The note codes were read straight from the
@@ -65,10 +58,10 @@ Conventions used in all songs:
     otherwise the same, ends on G (A in the print). This was checked twice in the scan.
   - The 1898 tune may differ in small details from the version sung today. The transcription
     follows the 1898 print.
-- **Für Elise, bar 13.** The high note after E5 is E6 as printed (C#6 in the built-in's key), two
-  octaves above the E4 just before it, on a third ledger line that its notehead covers in the scan. Read at about 3000 px wide, the
+- **Für Elise, bar 13.** The high note after E5 is E6, two octaves above the E4 just before it,
+  on a third ledger line that its notehead covers in the scan. Read at about 3000 px wide, the
   two ledger lines below it and the head's width point to E6; the bar then rests and goes on
-  with D#5 (C5 in the built-in). Everything else in bars 1-22 is a clean engraving.
+  with D#5. Everything else in bars 1-22 is a clean engraving.
 - The other four songs come from clean engravings or plain note codes, and no detail was unclear.
 
 ## Left out: no credible public-domain notation found

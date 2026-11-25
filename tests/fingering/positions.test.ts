@@ -13,6 +13,17 @@ test('unused fingers step along white keys from the nearest used finger', () => 
   const p = handPositions(seq('G(1) A(2) B(3)'));
   expect(p).toEqual([{ startIndex: 0, fingerKeys: { 1: 67, 2: 69, 3: 71, 4: 72, 5: 74 } }]);
 });
+test('a filled finger never takes a key played in the position (Für Elise bar 2)', () => {
+  // Finger 3 plays nothing. Stepping from finger 2 (G#) lands on A, which finger 4 plays, and no
+  // white key lies between G# and A, so finger 3 is left out.
+  const p = handPositions(seq('E(1) A(4) B(5) E(1) G#(2)'));
+  expect(p).toEqual([{ startIndex: 0, fingerKeys: { 1: 64, 2: 68, 4: 69, 5: 71 } }]);
+});
+test('a filled thumb steps past a played key to the next free one', () => {
+  // The thumb plays nothing. One white key below finger 2 (D) is C, which finger 3 plays.
+  const p = handPositions(seq('D(2) E(4) C(3)'));
+  expect(p).toEqual([{ startIndex: 0, fingerKeys: { 1: 59, 2: 62, 3: 60, 4: 64, 5: 65 } }]);
+});
 test('a new position starts at the first note that moves a finger', () => {
   const p = handPositions(seq('C(1) D(2) _ F(2) G(3)'));
   expect(p.map(x => x.startIndex)).toEqual([0, 3]);
