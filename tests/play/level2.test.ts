@@ -50,6 +50,14 @@ describe('level 2', () => {
     expect(s.isDone(9000)).toBe(false); // the end moved 7300 -> 9300
     expect(s.isDone(9301)).toBe(true);
   });
+  test('a press while paused counts for nothing', () => {
+    const s = new Level2Session(sched());
+    s.pause(3000);
+    expect(s.press(60, 4000)).toEqual({ kind: 'ignored' });
+    expect(s.press(61, 4000)).toEqual({ kind: 'ignored' });
+    s.resume(3500);
+    expect(s.result()).toEqual({ onTime: 0, close: 0, missed: 0, wrongPresses: 0, total: 3 });
+  });
   test('isDone after the last target window', () => {
     const s = new Level2Session(sched());
     expect(s.isDone(7300)).toBe(false);

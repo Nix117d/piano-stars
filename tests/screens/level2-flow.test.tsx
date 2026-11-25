@@ -71,3 +71,33 @@ test('level 2: unplugging freezes the song; a missed note is a wobble', async ()
   advance(2400); // the first note was due 2000 ms after the reconnect; now 400 ms late: missed
   expect(screen.getByTestId('key-60')).toHaveAttribute('data-wobble', 'true');
 });
+
+test('level 2: after a reconnect the beat continues without a stray click', async () => {
+  const fake = await openLevel2();
+  const click = vi.spyOn(synth, 'click').mockImplementation(() => {});
+  vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout', 'requestAnimationFrame', 'cancelAnimationFrame', 'performance'] });
+  act(() => fake.press(60, performance.now()));
+  advance(2500); // beats 0, 1 and 2
+  expect(click).toHaveBeenCalledTimes(3);
+  act(() => fake.setConnected(false));
+  advance(10000);
+  expect(click).toHaveBeenCalledTimes(3);
+  act(() => fake.setConnected(true));
+  advance(300); // the pause moved beat 3 from 3000 ms to 13000 ms
+  expect(click).toHaveBeenCalledTimes(3);
+  expect(screen.getByTestId('count-in').querySelectorAll('[data-filled]')).toHaveLength(3);
+  advance(600); // 13000 ms after the start
+  expect(click).toHaveBeenCalledTimes(4);
+  expect(screen.getByTestId('count-in').querySelectorAll('[data-filled]')).toHaveLength(4);
+});
+
+test('level 2: no click sounds when the metronome click is off', async () => {
+  await saveSettings({ ...DEFAULT_SETTINGS, level2Enabled: true, speeds: { cde: 'normal' } });
+  const fake = await openLevel2();
+  const click = vi.spyOn(synth, 'click').mockImplementation(() => {});
+  vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout', 'requestAnimationFrame', 'cancelAnimationFrame', 'performance'] });
+  act(() => fake.press(60, performance.now()));
+  advance(3500);
+  expect(screen.getByTestId('count-in').querySelectorAll('[data-filled]')).toHaveLength(4); // the beat runs
+  expect(click).not.toHaveBeenCalled();
+});

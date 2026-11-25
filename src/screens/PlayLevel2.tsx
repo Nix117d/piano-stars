@@ -51,16 +51,21 @@ export function PlayLevel2({ song, startTime, speed, metronome, source, lang, pa
   const react = (kind: Feedback['kind'], size: Feedback['size'], midi: number) =>
     setFeedback(f => ({ kind, size, midi, id: (f?.id ?? 0) + 1 }));
 
-  useEffect(() => {
-    if (paused) session.pause(performance.now());
-    else session.resume(performance.now());
-  }, [paused, session]);
+  // The session follows `paused` here (not in an effect, which could run a frame late), so what the loop
+  // and the presses see always agrees with it. A resume moves the beats, so the beat counter restarts from there.
+  const syncPause = (now: number) => {
+    if (pausedRef.current === session.paused) return;
+    if (pausedRef.current) { session.pause(now); return; }
+    session.resume(now);
+    lastBeat.current = Math.max(-1, Math.floor((now - session.startTime) / session.beatMs));
+  };
 
   // One loop for the beat (dots and click), the misses and the end. The drawing of the bubbles is in FallingLane.
   const midiAt = (index: number) => song.notes[index].midi!;
   useEffect(() => {
     let raf = requestAnimationFrame(function frame() {
       const now = performance.now();
+      syncPause(now);
       if (!pausedRef.current && !finished.current) {
         const k = Math.floor((now - session.startTime) / session.beatMs);
         if (k > lastBeat.current && k >= 0) {
@@ -82,7 +87,9 @@ export function PlayLevel2({ song, startTime, speed, metronome, source, lang, pa
 
   const handle = (midi: number, time: number) => {
     if (paused || finished.current) return;
+    syncPause(performance.now());
     const r = session.press(midi, time);
+    if (r.kind === 'ignored') return;
     if (r.kind === 'wrong') react('wobble', 'big', midi);
     else react('sparkle', r.kind === 'onTime' ? 'big' : 'small', midi);
   };

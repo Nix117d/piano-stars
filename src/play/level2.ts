@@ -36,7 +36,8 @@ export function scheduleNotes(notes: Note[], tempo: number, speed: Speed, startT
   return { targets, beatMs, startTime, endTime: (last ? last.time : startTime + COUNT_IN_BEATS * beatMs) + CLOSE_MS };
 }
 
-export type PressResult = { kind: 'onTime' | 'close'; index: number } | { kind: 'wrong' };
+/** `ignored`: the song is paused, so the press counts for nothing. */
+export type PressResult = { kind: 'onTime' | 'close'; index: number } | { kind: 'wrong' } | { kind: 'ignored' };
 
 /** Judges presses against a steady beat. The song never waits; `tick` finds the notes that were missed. */
 export class Level2Session {
@@ -55,6 +56,8 @@ export class Level2Session {
     this.startAt = s.startTime;
   }
 
+  get paused(): boolean { return this.pausedAt !== null; }
+
   /** When beat 0 (the first count-in beat) is, after any pauses. */
   get startTime(): number { return this.startAt; }
   get total(): number { return this.all.length; }
@@ -66,7 +69,8 @@ export class Level2Session {
   }
 
   press(midi: number, time: number): PressResult {
-    if (this.pausedAt === null) {
+    if (this.pausedAt !== null) return { kind: 'ignored' };
+    {
       const i = this.all.findIndex((t, k) => !this.judged.has(k) && t.midi === midi && Math.abs(time - t.time) <= CLOSE_MS);
       if (i >= 0) {
         this.judged.add(i);

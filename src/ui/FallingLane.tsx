@@ -24,11 +24,11 @@ export function FallingLane({ session, stage, fingers, paused }: FallingLaneProp
   pausedRef.current = paused;
   useEffect(() => {
     let raf = requestAnimationFrame(function frame() {
-      if (!pausedRef.current) setNow(performance.now());
+      if (!pausedRef.current && !session.paused) setNow(performance.now());
       raf = requestAnimationFrame(frame);
     });
     return () => cancelAnimationFrame(raf);
-  }, []);
+  }, [session]);
 
   const pending = session.pending();
   const xs = useKeyXs(stage, [...new Set(pending.map(t => t.midi))]);
