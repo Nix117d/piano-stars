@@ -147,7 +147,7 @@ export function ParentHome({ source, status, startResult, onStartKeyboard, onSet
           {songs.map(song => (
             <SongRow key={song.id} song={song} lang={lang} speed={settings.speeds[song.id] ?? 'slow'}
               onEdit={() => editSong(song)} onPicture={() => setPictureFor(song)}
-              onExport={() => { downloadSong(song); setGuideOpen(true); }}
+              onExport={() => { try { downloadSong(song); setGuideOpen(true); } catch (e) { fail(e); } }}
               onToggleHidden={() => void toggleHidden(song)}
               onDelete={() => setAsk({ message: t(lang, 'confirm.delete', { title: song.title }), onYes: () => void deleteSong(song.id).then(refresh).catch(fail) })}
               onSpeed={(s: Speed) => void changeSettings({ speeds: { ...settings.speeds, [song.id]: s } })} />

@@ -256,6 +256,10 @@ test('the parent area still opens when the settings cannot be read', async () =>
   warn.mockRestore();
 });
 
+const realCreate = URL.createObjectURL;
+const realRevoke = URL.revokeObjectURL;
+afterEach(() => { URL.createObjectURL = realCreate; URL.revokeObjectURL = realRevoke; });
+
 test('Save for keyboard downloads a plain file name and shows the guide', async () => {
   const create = vi.fn(() => 'blob:fake');
   const revoke = vi.fn();
@@ -265,10 +269,14 @@ test('Save for keyboard downloads a plain file name and shows the guide', async 
   await saveSong(userSong('Zie ginds komt'));
   home();
   const row = await screen.findByTestId('parent-song-Zie ginds komt');
+  vi.useFakeTimers({ toFake: ['setTimeout'] });
   fireEvent.click(within(row).getByRole('button', { name: 'Save for keyboard' }));
   expect(names).toEqual(['ZIEGINDS.MID']);
   expect(create).toHaveBeenCalledWith(expect.objectContaining({ type: 'audio/midi' }));
+  expect(revoke).not.toHaveBeenCalled();
+  vi.advanceTimersByTime(1000);
   expect(revoke).toHaveBeenCalledWith('blob:fake');
+  vi.useRealTimers();
   const guide = screen.getByTestId('export-guide');
   expect(within(guide).getAllByRole('listitem')).toHaveLength(4);
   expect(guide).toHaveTextContent('Storage Mode must be OFF');
@@ -276,4 +284,14 @@ test('Save for keyboard downloads a plain file name and shows the guide', async 
   expect(screen.queryByTestId('export-guide')).toBeNull();
   // Built-in songs get the button too.
   expect(within(await screen.findByTestId('parent-song-cde')).getByRole('button', { name: 'Save for keyboard' })).toBeTruthy();
+});
+
+test('Save for keyboard shows the error banner when the download fails', async () => {
+  URL.createObjectURL = () => { throw new Error('nope'); };
+  vi.spyOn(console, 'warn').mockImplementation(() => {});
+  await saveSong(userSong('abc'));
+  home();
+  fireEvent.click(within(await screen.findByTestId('parent-song-abc')).getByRole('button', { name: 'Save for keyboard' }));
+  expect(screen.getByTestId('storage-error')).toBeTruthy();
+  expect(screen.queryByTestId('export-guide')).toBeNull();
 });

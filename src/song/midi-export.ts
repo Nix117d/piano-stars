@@ -57,6 +57,7 @@ export function downloadSong(song: Song): string {
   document.body.appendChild(a);
   a.click();
   a.remove();
-  URL.revokeObjectURL(url);
+  // Some browsers cancel the download if the URL is revoked straight away.
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
   return fileName;
 }
