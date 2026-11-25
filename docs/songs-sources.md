@@ -69,9 +69,8 @@ added later if a public-domain score turns up.
   *Een mandje vol amandelen* (1963, not public domain) and a modern website. nl.wikipedia names
   Almoes, *Vroolijk St. Nicolaas-feest* (192x), as the oldest source. A web search found no scan
   of it, and Delpher refused automated access (HTTP 403), so it could not be searched.
-- **Dag, Sinterklaasje.** nl.wikisource says the welcome song "Wees welkom vandaag in ons midden"
-  (text Antoinette van Dijk, songbook of Van Pelt & Boon, 1926) is sung to Mendelssohn's
-  "O Winter, schlimmer Winter". It also says "Dag, Sinterklaasje" is a part of that song. Without
+- **Dag, Sinterklaasje.** nl.wikisource says that the welcome song in Van Pelt & Boon (1926)
+  (text Antoinette van Dijk) is sung to Mendelssohn's "O Winter, schlimmer Winter". It also says "Dag, Sinterklaasje" is a part of that song. Without
   the 1926 songbook, there is no way to tell which part of Mendelssohn's tune these four lines use.
   Mendelssohn also set the poem twice (Op. 57 No. 2 and Op. 88 No. 3). A web search found no scan
   of the 1926 songbook, and Delpher refused automated access (HTTP 403), so it could not be
